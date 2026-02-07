@@ -5,10 +5,10 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 
 const NAV_ITEMS = [
-  { href: "/admin/dashboard", label: "Dashboard" },
-  { href: "/admin/guests", label: "Guests" },
-  { href: "/admin/templates", label: "Email Templates" },
-  { href: "/admin/media", label: "Media" },
+  { href: "/manage/dashboard", label: "Dashboard" },
+  { href: "/manage/guests", label: "Guests" },
+  { href: "/manage/templates", label: "Email Templates" },
+  { href: "/manage/media", label: "Media" },
 ];
 
 export default function AdminLayout({
@@ -28,14 +28,14 @@ export default function AdminLayout({
       })
       .then(() => setAuthenticated(true))
       .catch(() => {
-        if (pathname !== "/admin/login") {
-          router.push("/admin/login");
+        if (pathname !== "/manage/login") {
+          router.push("/manage/login");
         }
         setAuthenticated(false);
       });
   }, [pathname, router]);
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/manage/login") {
     return <>{children}</>;
   }
 
@@ -51,7 +51,7 @@ export default function AdminLayout({
 
   async function handleLogout() {
     await fetch("/api/auth", { method: "DELETE" });
-    router.push("/admin/login");
+    router.push("/manage/login");
   }
 
   return (

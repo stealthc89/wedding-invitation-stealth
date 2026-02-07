@@ -26,13 +26,6 @@ function getDb(): Database.Database {
 
 function initSchema(db: Database.Database) {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS admin_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
     CREATE TABLE IF NOT EXISTS guests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       token TEXT UNIQUE NOT NULL,

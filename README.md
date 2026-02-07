@@ -50,9 +50,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000/admin/login](http://localhost:3000/admin/login) with:
-- Email: `admin@wedding.com`
-- Password: `admin123`
+Set up Google OAuth credentials (see below), then open [http://localhost:3000/manage/login](http://localhost:3000/manage/login) and sign in with your Google account.
 
 ## Production Deployment
 
@@ -86,19 +84,33 @@ terraform apply
 docker build -t wedding-rsvp .
 docker run -p 3000:3000 \
   -e JWT_SECRET=your-secret \
-  -e ADMIN_EMAIL=admin@wedding.com \
-  -e ADMIN_PASSWORD=your-password \
+  -e GOOGLE_CLIENT_ID=your-client-id \
+  -e GOOGLE_CLIENT_SECRET=your-client-secret \
+  -e ADMIN_EMAILS=you@gmail.com,fiancee@gmail.com \
   -e BASE_URL=https://your-domain.com \
   -v wedding-data:/app/data \
   wedding-rsvp
 ```
 
+## Authentication Setup
+
+Admin access uses **Google OAuth**. Only Gmail addresses listed in `ADMIN_EMAILS` can sign in.
+
+### Creating Google OAuth credentials
+
+1. Go to [Google Cloud Console > APIs & Services > Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create an **OAuth 2.0 Client ID** (type: Web application)
+3. Add authorized redirect URI: `https://your-domain.com/api/auth/google/callback`
+   - For local dev, also add: `http://localhost:3000/api/auth/google/callback`
+4. Copy the Client ID and Client Secret into your env vars
+
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `ADMIN_EMAIL` | Admin login email | `admin@wedding.com` |
-| `ADMIN_PASSWORD` | Admin login password | `admin123` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | (required) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | (required) |
+| `ADMIN_EMAILS` | Comma-separated Gmail addresses for admin access | (required) |
 | `JWT_SECRET` | Secret for session tokens | (insecure default) |
 | `BASE_URL` | Public URL of the site | `http://localhost:3000` |
 | `SMTP_HOST` | SMTP server host | `smtp.resend.com` |
@@ -117,8 +129,6 @@ email_templates (id, slug, name, subject, body_html)
 
 email_log (id, guest_id, template_slug, sent_at, status)
 
-admin_users (id, email, password_hash)
-
 settings (key, value)
 ```
 
@@ -129,7 +139,8 @@ settings (key, value)
 - `POST /api/rsvp` — Submit RSVP
 
 ### Admin (Authenticated)
-- `POST /api/auth` — Login
+- `GET /api/auth/google` — Initiate Google OAuth sign-in
+- `GET /api/auth/google/callback` — OAuth callback (sets session)
 - `DELETE /api/auth` — Logout
 - `GET /api/auth/me` — Check session
 - `GET /api/admin/guests` — List guests (add `?format=csv` for export)

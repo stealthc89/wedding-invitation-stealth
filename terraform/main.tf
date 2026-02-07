@@ -23,16 +23,20 @@ variable "image" {
   type        = string
 }
 
-variable "admin_email" {
-  description = "Admin login email"
+variable "google_client_id" {
+  description = "Google OAuth client ID"
   type        = string
-  default     = "admin@wedding.com"
 }
 
-variable "admin_password" {
-  description = "Admin login password"
+variable "google_client_secret" {
+  description = "Google OAuth client secret"
   type        = string
   sensitive   = true
+}
+
+variable "admin_emails" {
+  description = "Comma-separated Gmail addresses allowed to access admin"
+  type        = string
 }
 
 variable "jwt_secret" {
@@ -138,12 +142,16 @@ resource "google_cloud_run_v2_service" "wedding" {
         value = "production"
       }
       env {
-        name  = "ADMIN_EMAIL"
-        value = var.admin_email
+        name  = "GOOGLE_CLIENT_ID"
+        value = var.google_client_id
       }
       env {
-        name  = "ADMIN_PASSWORD"
-        value = var.admin_password
+        name  = "GOOGLE_CLIENT_SECRET"
+        value = var.google_client_secret
+      }
+      env {
+        name  = "ADMIN_EMAILS"
+        value = var.admin_emails
       }
       env {
         name  = "JWT_SECRET"

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSession, ensureAdminExists } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 
 export async function GET() {
-  ensureAdminExists();
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ authenticated: false }, { status: 401 });

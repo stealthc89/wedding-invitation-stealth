@@ -1,39 +1,40 @@
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { cookies } from "next/headers";
-import getDb from "./db";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production-wedding-2026";
 const COOKIE_NAME = "admin_token";
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10);
+// Comma-separated list of Gmail addresses allowed to access admin
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
+  .split(",")
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export function isAdminEmail(email: string): boolean {
+  return ADMIN_EMAILS.includes(email.toLowerCase());
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
+export function createToken(email: string): string {
+  return jwt.sign({ email }, JWT_SECRET, { expiresIn: "7d" });
 }
 
-export function createToken(userId: number, email: string): string {
-  return jwt.sign({ userId, email }, JWT_SECRET, { expiresIn: "7d" });
-}
-
-export function verifyToken(token: string): { userId: number; email: string } | null {
+export function verifyToken(token: string): { email: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
+    return jwt.verify(token, JWT_SECRET) as { email: string };
   } catch {
     return null;
   }
 }
 
-export async function getSession(): Promise<{ userId: number; email: string } | null> {
+export async function getSession(): Promise<{ email: string } | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return verifyToken(token);
 }
 
-export async function requireAdmin(): Promise<{ userId: number; email: string }> {
+export async function requireAdmin(): Promise<{ email: string }> {
   const session = await getSession();
   if (!session) {
     throw new Error("Unauthorized");
@@ -41,16 +42,21 @@ export async function requireAdmin(): Promise<{ userId: number; email: string }>
   return session;
 }
 
-export function ensureAdminExists() {
-  const db = getDb();
-  const count = db.prepare("SELECT COUNT(*) as c FROM admin_users").get() as { c: number };
-  if (count.c === 0) {
-    const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || "admin123", 10);
-    db.prepare("INSERT INTO admin_users (email, password_hash) VALUES (?, ?)").run(
-      process.env.ADMIN_EMAIL || "admin@wedding.com",
-      hash
-    );
-  }
+export function generateOAuthState(): string {
+  return crypto.randomBytes(32).toString("hex");
 }
 
-export { COOKIE_NAME, JWT_SECRET };
+export function getGoogleAuthUrl(state: string): string {
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID || "",
+    redirect_uri: `${process.env.BASE_URL || "http://localhost:3000"}/api/auth/google/callback`,
+    response_type: "code",
+    scope: "openid email profile",
+    state,
+    access_type: "online",
+    prompt: "select_account",
+  });
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+}
+
+export { COOKIE_NAME };

@@ -8,8 +8,9 @@ services:
     environment:
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET:-change-this-to-a-random-string}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@wedding.com}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - ADMIN_EMAILS=${ADMIN_EMAILS:-}
       - BASE_URL=${BASE_URL:-http://localhost:3000}
       - SMTP_HOST=${SMTP_HOST:-smtp.resend.com}
       - SMTP_PORT=${SMTP_PORT:-465}
