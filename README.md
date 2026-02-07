@@ -14,12 +14,26 @@ A self-hosted, single-container wedding guest RSVP website with admin portal. Bu
 ## Architecture
 
 ```
-Single Container (Next.js full-stack)
-├── React Frontend (guest + admin)
-├── API Routes (REST)
-├── SQLite Database (embedded)
-└── SMTP Client (email delivery)
+┌──────────────┐     ┌──────────────────────────────┐
+│   Browser    │────▶│  Cloud Run (single container) │
+└──────────────┘     │  ┌────────────────────────┐   │
+                     │  │  Next.js (Full-stack)   │   │
+                     │  │  ├── React Frontend     │   │
+                     │  │  ├── API Routes (REST)  │   │
+                     │  │  └── SQLite (embedded)  │   │
+                     │  └───────────┬────────────┘   │
+                     │              │ native GCS mount│
+                     └──────────────┼────────────────┘
+                                    ▼
+                     ┌──────────────────────────────┐
+                     │  GCS Bucket (persistent data) │
+                     │  ├── wedding.db               │
+                     │  └── (versioned, 11-nines     │
+                     │       durability)              │
+                     └──────────────────────────────┘
 ```
+
+**Storage**: SQLite database lives on a GCS bucket mounted natively by Cloud Run V2. No manual FUSE configuration needed — just declare a `gcs` volume in the service spec. Data persists across scale-to-zero events, container restarts, and redeploys. GCS object versioning provides automatic backup history.
 
 **Estimated monthly cost on GCP Cloud Run: $0–5** (within free tier for 200–250 guests)
 
@@ -142,19 +156,36 @@ Jane Doe,jane@example.com,false
 
 Column names are flexible: `Name`, `Email`, `Plus One`, `plus_one` also work.
 
+## Storage & Resilience
+
+### Cloud Run (GCS bucket mount)
+The Terraform config uses Cloud Run V2's native GCS volume mount at `/app/data`. This means:
+- Database survives **scale-to-zero** — data is in GCS, not the container
+- Database survives **redeployments** — the bucket is independent of the container
+- **GCS object versioning** is enabled — every write creates a version, giving you 30 generations of automatic backup history
+- **11 nines durability** (99.999999999%) — more durable than any single disk
+
+**Why this works safely with SQLite:**
+- `max_instances = 1` ensures only one container writes to the DB at a time
+- `journal_mode = DELETE` avoids the `.shm`/`.wal` files that break on FUSE
+- Write volume is tiny (~500 total writes over the event lifecycle)
+
+### Docker / VPS (local volumes)
+Docker Compose uses local named volumes. Data persists across container restarts but lives on the host disk. Use the backup script for additional safety.
+
 ## Backup Strategy
 
-1. **Manual**: Admin portal → "Download Backup" (downloads SQLite file)
-2. **Scripted**: `./scripts/backup.sh` — copies DB locally, optionally uploads to GCS/S3
-3. **Automated**: Add cron job: `0 2 * * * /path/to/scripts/backup.sh`
-
-Set `GCS_BUCKET` or `S3_BUCKET` env vars for cloud backup uploads.
+1. **GCS Versioning** (Cloud Run): Automatic — every DB write is versioned in GCS. Restore any previous version via `gsutil` or the GCS Console.
+2. **Manual**: Admin portal → "Download Backup" (downloads SQLite file directly)
+3. **Scripted**: `./scripts/backup.sh` — copies DB to a separate backup bucket (GCS or S3)
+4. **Automated**: Add cron job: `0 2 * * * /path/to/scripts/backup.sh`
 
 ## Cost Estimate (GCP Cloud Run)
 
 | Resource | Monthly Cost |
 |----------|-------------|
 | Cloud Run (scales to zero) | $0 (free tier) |
+| GCS data bucket (~100KB DB) | < $0.01 |
 | GCS backup bucket | < $0.10 |
 | Domain (optional) | $0–12/year |
 | Resend email (100/mo free) | $0 |

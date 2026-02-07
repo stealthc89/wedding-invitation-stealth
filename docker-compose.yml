@@ -1,3 +1,5 @@
+# For Docker / VPS: local volumes persist data across restarts.
+# For GCP Cloud Run: use Terraform config (GCS bucket mount instead).
 services:
   wedding:
     build: .

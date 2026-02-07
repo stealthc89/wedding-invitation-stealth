@@ -14,7 +14,10 @@ let db: Database.Database;
 function getDb(): Database.Database {
   if (!db) {
     db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
+    // Use DELETE journal mode for compatibility with GCS FUSE mounts.
+    // WAL mode requires shared-memory files (.shm/.wal) that don't work
+    // reliably on network filesystems. DELETE mode is safe with max_instances=1.
+    db.pragma("journal_mode = DELETE");
     db.pragma("foreign_keys = ON");
     initSchema(db);
   }

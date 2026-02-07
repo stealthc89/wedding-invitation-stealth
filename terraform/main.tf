@@ -64,7 +64,27 @@ provider "google" {
   region  = var.region
 }
 
-# GCS bucket for backups
+# GCS bucket for SQLite database (mounted via gcsfuse on Cloud Run)
+resource "google_storage_bucket" "data" {
+  name          = "${var.project_id}-wedding-data"
+  location      = var.region
+  force_destroy = false
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    condition {
+      num_newer_versions = 30
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}
+
+# GCS bucket for backups (separate from live data)
 resource "google_storage_bucket" "backups" {
   name          = "${var.project_id}-wedding-backups"
   location      = var.region
@@ -80,12 +100,32 @@ resource "google_storage_bucket" "backups" {
   }
 }
 
+# Service account for Cloud Run to access GCS buckets
+resource "google_service_account" "wedding_runner" {
+  account_id   = "wedding-rsvp-runner"
+  display_name = "Wedding RSVP Cloud Run service account"
+}
+
+resource "google_storage_bucket_iam_member" "data_access" {
+  bucket = google_storage_bucket.data.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.wedding_runner.email}"
+}
+
+resource "google_storage_bucket_iam_member" "backup_access" {
+  bucket = google_storage_bucket.backups.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.wedding_runner.email}"
+}
+
 # Cloud Run service
 resource "google_cloud_run_v2_service" "wedding" {
   name     = "wedding-rsvp"
   location = var.region
 
   template {
+    service_account = google_service_account.wedding_runner.email
+
     containers {
       image = var.image
 
@@ -135,17 +175,20 @@ resource "google_cloud_run_v2_service" "wedding" {
       }
     }
 
+    # Cloud Run V2 native GCS volume mount — no manual FUSE config needed.
+    # Persistent storage that survives scale-to-zero and redeploys.
+    # Safe for SQLite with max_instances=1 (single writer) + DELETE journal mode.
     volumes {
       name = "data"
-      empty_dir {
-        medium     = "MEMORY"
-        size_limit = "100Mi"
+      gcs {
+        bucket    = google_storage_bucket.data.name
+        read_only = false
       }
     }
 
     scaling {
       min_instance_count = 0
-      max_instance_count = 1
+      max_instance_count = 1  # Critical: ensures single SQLite writer
     }
   }
 }
@@ -161,6 +204,10 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
 
 output "service_url" {
   value = google_cloud_run_v2_service.wedding.uri
+}
+
+output "data_bucket" {
+  value = google_storage_bucket.data.name
 }
 
 output "backup_bucket" {
