@@ -1,0 +1,33 @@
+name: Sync to Stealth Repo
+
+on:
+  push:
+    branches:
+      - '**'
+  delete:
+    branches:
+      - '**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: Add stealth remote
+        run: |
+          git remote add stealth https://x-access-token:${{ secrets.SYNC_TOKEN }}@github.com/stealthc89/wedding-invitation-stealth.git
+
+      - name: Push to stealth repo
+        run: |
+          git push stealth --all --force
+          git push stealth --tags --force
