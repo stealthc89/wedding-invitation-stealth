@@ -1,14 +1,23 @@
+import PhotoSlideshow from "@/components/PhotoSlideshow";
+
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
-      <div className="text-center px-6">
-        <h1 className="text-5xl font-normal text-[var(--color-primary)] mb-4">
-          Wedding Celebration
+    <PhotoSlideshow overlay="dark">
+      <div className="text-center px-6 py-20">
+        <p className="text-sm uppercase tracking-[0.3em] text-white/70 mb-4">
+          Together with their families
+        </p>
+        <h1 className="text-6xl md:text-7xl font-normal text-white mb-3">
+          Chris & Candice
         </h1>
-        <p className="text-lg text-[var(--color-muted)]">
-          Please use your personal invitation link to RSVP.
+        <div className="w-16 h-px bg-white/40 mx-auto my-6" />
+        <p className="text-lg text-white/80 mb-2">
+          Request the pleasure of your company
+        </p>
+        <p className="text-sm text-white/60 mt-8">
+          Please use your personal invitation link to RSVP
         </p>
       </div>
-    </div>
+    </PhotoSlideshow>
   );
 }

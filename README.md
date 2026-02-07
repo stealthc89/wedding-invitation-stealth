@@ -167,6 +167,76 @@ Jane Doe,jane@example.com,false
 
 Column names are flexible: `Name`, `Email`, `Plus One`, `plus_one` also work.
 
+## Uploading Photos & Videos
+
+The home page and RSVP page display a Ken Burns animated slideshow cycling through your photos. There are two ways to add media:
+
+### Option A: Add to the repo (before deployment)
+
+Place image or video files in the `public/media/` directory:
+
+```bash
+# Copy your photos into the project
+cp ~/photos/venice.jpg public/media/venice.jpg
+cp ~/photos/bali.jpg public/media/bali.jpg
+cp ~/photos/neworleans.jpg public/media/neworleans.jpg
+cp ~/photos/beach.jpg public/media/beach.jpg
+```
+
+Then update the photo list in `src/components/PhotoSlideshow.tsx`:
+
+```typescript
+const DEFAULT_PHOTOS = [
+  "/media/venice.jpg",
+  "/media/bali.jpg",
+  "/media/neworleans.jpg",
+  "/media/beach.jpg",
+  "/media/your-new-photo.jpg",  // add more here
+];
+```
+
+Rebuild and redeploy after adding files.
+
+### Option B: Upload via Admin Console (after deployment)
+
+1. Sign in at `/manage/login` with your Google account
+2. Go to **Media** in the sidebar
+3. Upload images (JPEG, PNG, WebP) or videos (MP4, WebM)
+4. Files are saved to `public/media/` inside the container
+5. Update the `PhotoSlideshow` component or settings to reference the new file paths
+
+**Recommended image specs**: 1920×1280 or larger, landscape orientation, JPEG quality 80–90, under 2 MB per file for fast loading.
+
+## Uploading Your Guest List
+
+### Option A: CSV upload via Admin Console
+
+1. Sign in at `/manage/login`
+2. Go to **Guests** in the sidebar
+3. Click **Upload CSV** and select your file
+
+**CSV format**:
+
+```csv
+name,email,plus_one_allowed
+John Smith,john@example.com,true
+Jane Doe,jane@example.com,false
+```
+
+Column names are flexible — `Name`, `Email`, `Plus One`, `plus_one` all work.
+
+### Option B: Excel to CSV
+
+Excel files (`.xlsx`) need to be saved as CSV first:
+
+1. Open the spreadsheet in Excel or Google Sheets
+2. **File → Download as → CSV** (or Save As → CSV UTF-8)
+3. Upload the resulting `.csv` file through the admin console
+
+### Option C: Add guests one by one
+
+Use the **Add Guest** form on the Guests page in the admin console to add guests individually.
+
 ## Storage & Resilience
 
 ### Cloud Run (GCS bucket mount)

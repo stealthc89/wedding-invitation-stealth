@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import PhotoSlideshow from "@/components/PhotoSlideshow";
 
 interface GuestData {
   id: number;
@@ -86,40 +87,45 @@ export default function RSVPPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
-        <p className="text-[var(--color-muted)]">Loading your invitation...</p>
-      </div>
+      <PhotoSlideshow overlay="dark">
+        <p className="text-white/70">Loading your invitation...</p>
+      </PhotoSlideshow>
     );
   }
 
   if (error && !guest) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)]">
+      <PhotoSlideshow overlay="dark">
         <div className="text-center px-6">
-          <h1 className="text-3xl text-[var(--color-primary)] mb-4">Oops</h1>
-          <p className="text-[var(--color-error)]">{error}</p>
+          <h1 className="text-3xl text-white mb-4">Oops</h1>
+          <p className="text-red-300">{error}</p>
         </div>
-      </div>
+      </PhotoSlideshow>
     );
   }
 
   if (!guest) return null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-10">
-          <h1 className="text-4xl text-[var(--color-primary)] mb-2">
+    <PhotoSlideshow overlay="dark">
+      <div className="w-full max-w-lg mx-4 my-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <p className="text-sm uppercase tracking-[0.3em] text-white/60 mb-3">
             You&apos;re Invited
+          </p>
+          <h1 className="text-4xl md:text-5xl text-white mb-2">
+            Chris & Candice
           </h1>
-          <p className="text-xl text-[var(--color-accent)]">{guest.name}</p>
+          <div className="w-12 h-px bg-white/40 mx-auto my-4" />
+          <p className="text-xl text-white/90">{guest.name}</p>
         </div>
 
         {submitted ? (
-          <div className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-8 text-center">
+          <div className="glass-card rounded-2xl p-8 text-center">
             <div className="text-4xl mb-4">{attending ? "🎉" : "💌"}</div>
             <h2 className="text-2xl text-[var(--color-primary)] mb-3">
-              {attending ? "We can't wait to see you!" : "We'll miss you!"}
+              {attending ? "We can\u2019t wait to see you!" : "We\u2019ll miss you!"}
             </h2>
             <div className="text-[var(--color-muted)] space-y-1 mb-6">
               <p>
@@ -143,14 +149,12 @@ export default function RSVPPage() {
             </p>
           </div>
         ) : (
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white rounded-lg shadow-sm border border-[var(--color-border)] p-8"
-          >
+          <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-8">
             {error && (
               <p className="text-[var(--color-error)] text-sm mb-4">{error}</p>
             )}
 
+            {/* Attendance */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-[var(--color-primary)] mb-3">
                 Will you be attending?
@@ -159,9 +163,9 @@ export default function RSVPPage() {
                 <button
                   type="button"
                   onClick={() => setAttending(true)}
-                  className={`flex-1 py-3 px-4 rounded border-2 transition-colors ${
+                  className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === true
-                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
                       : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
                   }`}
                 >
@@ -173,9 +177,9 @@ export default function RSVPPage() {
                     setAttending(false);
                     setPlusOneAttending(false);
                   }}
-                  className={`flex-1 py-3 px-4 rounded border-2 transition-colors ${
+                  className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === false
-                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
                       : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
                   }`}
                 >
@@ -184,6 +188,7 @@ export default function RSVPPage() {
               </div>
             </div>
 
+            {/* Plus One */}
             {attending && guest.plus_one_allowed === 1 && (
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-[var(--color-primary)] mb-3">
@@ -193,9 +198,9 @@ export default function RSVPPage() {
                   <button
                     type="button"
                     onClick={() => setPlusOneAttending(true)}
-                    className={`flex-1 py-3 px-4 rounded border-2 transition-colors ${
+                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                       plusOneAttending
-                        ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                        ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
                         : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
                     }`}
                   >
@@ -204,9 +209,9 @@ export default function RSVPPage() {
                   <button
                     type="button"
                     onClick={() => setPlusOneAttending(false)}
-                    className={`flex-1 py-3 px-4 rounded border-2 transition-colors ${
+                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                       !plusOneAttending
-                        ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                        ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
                         : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
                     }`}
                   >
@@ -216,6 +221,7 @@ export default function RSVPPage() {
               </div>
             )}
 
+            {/* Meal Preference */}
             {attending && (
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
@@ -230,9 +236,9 @@ export default function RSVPPage() {
                       key={option.value}
                       type="button"
                       onClick={() => setMealPreference(option.value)}
-                      className={`py-2 px-3 rounded border-2 text-sm transition-colors ${
+                      className={`py-2.5 px-3 rounded-lg border-2 text-sm transition-all ${
                         mealPreference === option.value
-                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
                           : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
                       }`}
                     >
@@ -243,16 +249,17 @@ export default function RSVPPage() {
               </div>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={attending === null || submitting}
-              className="w-full py-3 bg-[var(--color-primary)] text-white rounded hover:opacity-90 disabled:opacity-40 transition-opacity"
+              className="w-full py-3 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-40 transition-all shadow-md"
             >
               {submitting ? "Submitting..." : "Submit RSVP"}
             </button>
           </form>
         )}
       </div>
-    </div>
+    </PhotoSlideshow>
   );
 }

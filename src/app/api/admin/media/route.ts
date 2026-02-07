@@ -56,11 +56,44 @@ export async function GET() {
     return NextResponse.json([]);
   }
 
-  const files = fs.readdirSync(MEDIA_DIR).map((name) => ({
-    name,
-    path: `/media/${name}`,
-    size: fs.statSync(path.join(MEDIA_DIR, name)).size,
-  }));
+  const files = fs
+    .readdirSync(MEDIA_DIR)
+    .filter((name) => name !== ".gitkeep")
+    .map((name) => {
+      const stat = fs.statSync(path.join(MEDIA_DIR, name));
+      return {
+        name,
+        path: `/media/${name}`,
+        size: stat.size,
+        modified: stat.mtime.toISOString(),
+      };
+    });
 
   return NextResponse.json(files);
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { filename } = await req.json();
+    if (!filename || filename.includes("..") || filename.includes("/")) {
+      return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
+    }
+
+    const filePath = path.join(MEDIA_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    fs.unlinkSync(filePath);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Media delete error:", error);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
 }
