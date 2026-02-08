@@ -37,7 +37,7 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0;
-  transform: scale(1.08) translateZ(0);
+  transform: scale(1) translateZ(0);
   /* Only transition opacity, NOT transform - prevents jump when slide becomes inactive */
   transition: opacity 2s ease-in-out;
   will-change: opacity, transform;
@@ -49,6 +49,8 @@ body {
   /* GPU acceleration for smoother animations */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Keep zoomed state after animation finishes */
+  animation-fill-mode: forwards;
 }
 
 .slideshow-slide.slideshow-active {

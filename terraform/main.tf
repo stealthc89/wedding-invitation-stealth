@@ -63,6 +63,12 @@ variable "email_from" {
   default     = "wedding@yourdomain.com"
 }
 
+variable "deploy_timestamp" {
+  description = "Deployment timestamp to force new revisions"
+  type        = string
+  default     = ""
+}
+
 provider "google" {
   project = var.project_id
   region  = var.region
@@ -172,6 +178,10 @@ resource "google_cloud_run_v2_service" "wedding" {
       env {
         name  = "EMAIL_FROM"
         value = var.email_from
+      }
+      env {
+        name  = "DEPLOY_TIMESTAMP"
+        value = var.deploy_timestamp
       }
 
       resources {

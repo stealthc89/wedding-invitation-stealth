@@ -392,8 +392,19 @@ This script:
 3. Builds Docker image (with platform flag)
 4. Pushes to Google Container Registry
 5. Deploys with Terraform
-6. Shows OAuth redirect URL
-7. Attempts domain mapping
+6. Configures public access (IAM)
+7. Shows OAuth redirect URL
+8. Attempts domain mapping
+
+**Note:** If IAM configuration fails with permission errors, the service can be made public manually:
+```bash
+gcloud run services add-iam-policy-binding wedding-rsvp \
+  --region=europe-west1 \
+  --member="allUsers" \
+  --role="roles/run.invoker"
+```
+
+This only needs to be done once on first deployment.
 
 ---
 

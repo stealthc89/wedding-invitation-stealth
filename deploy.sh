@@ -47,11 +47,19 @@ docker push $IMAGE
 echo ""
 echo "6️⃣  Deploying infrastructure with Terraform..."
 cd terraform
+
+# Generate timestamp to force new revision
+DEPLOY_TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
+echo "   Deploy timestamp: $DEPLOY_TIMESTAMP"
+
 terraform init
-terraform plan -out=tfplan
+terraform plan -var="deploy_timestamp=$DEPLOY_TIMESTAMP" -out=tfplan
 terraform apply tfplan
 
 # Step 7: Configure public access (IAM binding)
+# Note: This step may fail if you don't have run.services.setIamPolicy permission.
+# If it fails, the service can be made public manually via:
+# gcloud run services add-iam-policy-binding wedding-rsvp --region=europe-west1 --member="allUsers" --role="roles/run.invoker"
 echo ""
 echo "7️⃣  Configuring public access to Cloud Run service..."
 cd ..
@@ -59,15 +67,16 @@ IAM_RESULT=$(gcloud run services add-iam-policy-binding wedding-rsvp \
   --region=$REGION \
   --member="allUsers" \
   --role="roles/run.invoker" \
-  --project=$PROJECT_ID 2>&1)
+  --project=$PROJECT_ID 2>&1 || true)
 
 if echo "$IAM_RESULT" | grep -q "Updated IAM policy\|bindings"; then
   echo "   ✅ Public access configured"
 elif echo "$IAM_RESULT" | grep -q "ALREADY_EXISTS\|already present"; then
   echo "   ✅ Public access already configured"
+elif echo "$IAM_RESULT" | grep -q "PERMISSION_DENIED"; then
+  echo "   ⚠️  Permission denied - IAM already configured or manual setup needed"
 else
   echo "   ⚠️  IAM binding may have failed, but continuing..."
-  echo "   $IAM_RESULT"
 fi
 
 # Step 8: Get service URL
@@ -117,9 +126,8 @@ if [ "$DOMAIN_EXISTS" = "no" ]; then
     --project=$PROJECT_ID && {
     echo "   ✅ Domain mapping created!"
   } || {
-    echo "   ⚠️  Domain mapping creation failed."
+    echo "   ⚠️  Domain mapping creation failed (may already exist or need manual setup)"
     echo "      Visit: https://console.cloud.google.com/run/domains"
-    exit 1
   }
 else
   echo "   ✅ Domain mapping already exists"
