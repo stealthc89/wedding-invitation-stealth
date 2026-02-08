@@ -61,9 +61,13 @@ export default function PhotoSlideshow({
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
 
   // Initialize activePhotos with first image only after it's actually loaded
+  // Use a small delay to ensure smooth fade-in transition
   useEffect(() => {
     if (activePhotos.length === 0 && photos.length > 0 && loaded.has(0)) {
-      setActivePhotos([photos[0]]);
+      // Small delay ensures the image is fully rendered before fade-in starts
+      setTimeout(() => {
+        setActivePhotos([photos[0]]);
+      }, 50);
     }
   }, [photos, activePhotos.length, loaded.size]);
 
