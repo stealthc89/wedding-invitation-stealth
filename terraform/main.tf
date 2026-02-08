@@ -205,14 +205,8 @@ resource "google_cloud_run_v2_service" "wedding" {
   }
 }
 
-# Allow unauthenticated access (public website)
-resource "google_cloud_run_v2_service_iam_member" "public" {
-  project  = google_cloud_run_v2_service.wedding.project
-  location = google_cloud_run_v2_service.wedding.location
-  name     = google_cloud_run_v2_service.wedding.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+# IAM binding is now handled by deploy.sh Step 7 via gcloud command
+# (removed Terraform resource to avoid permission issues)
 
 output "service_url" {
   description = "Cloud Run service URL"
