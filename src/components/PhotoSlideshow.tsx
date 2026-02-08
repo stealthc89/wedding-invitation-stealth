@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 
 // Fallback photos if API returns empty and no photos prop is given
 const FALLBACK_PHOTOS = [
-  "/media/venice.jpg",
-  "/media/bali.jpg",
-  "/media/neworleans.jpg",
-  "/media/beach.jpg",
+  "/media/0B57CC9D-8E92-4027-857C-CAF2E1C8691C_4_5005_c.jpeg",
+  "/media/551EBE0C-239A-4190-A143-D0AB9996415C_1_102_o.jpeg",
+  "/media/85A7FCD9-77EC-40FD-B979-29199E6C4D56_1_105_c.jpeg",
+  "/media/955A1C67-67D5-46B7-AC5E-90E5E79FB7BB_1_105_c.jpeg",
 ];
 
 // Each slide gets a different zoom origin for variety
