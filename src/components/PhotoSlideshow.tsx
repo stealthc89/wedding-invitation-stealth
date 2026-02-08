@@ -57,7 +57,7 @@ export default function PhotoSlideshow({
 
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
 
-  // Preload all images for smoother transitions
+  // Preload images: prioritize first 2 images for fast initial load
   useEffect(() => {
     if (photos.length === 0) return;
 
@@ -65,9 +65,13 @@ export default function PhotoSlideshow({
       if (!loaded.has(index)) {
         const img = new Image();
         img.src = photo;
-        // Add quality hints for better rendering
-        img.loading = "eager";
+        // Eagerly load first 2 images, lazy load the rest for better performance
+        img.loading = index < 2 ? "eager" : "lazy";
         img.decoding = "async";
+        // Prioritize first image for immediate display
+        if (index === 0) {
+          img.fetchPriority = "high";
+        }
         img.onload = () => {
           setLoaded((prev) => {
             const newSet = new Set(prev);
