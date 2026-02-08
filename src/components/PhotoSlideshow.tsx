@@ -10,7 +10,7 @@ const FALLBACK_PHOTOS = [
   "/media/bali-temple-jumping-reflection.jpeg",
   "/media/egypt-pyramids-camels-couple.jpeg",
   "/media/snow-mountains-sunset-cuddle.jpeg",
-  "/media/scuba-diving-underwater-heart.jpeg",
+  "/media/scuba-diving-couple-underwater-heart.jpeg",
 ];
 
 // Each slide gets a different zoom origin for variety

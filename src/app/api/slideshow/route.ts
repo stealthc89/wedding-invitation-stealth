@@ -17,7 +17,6 @@ const CURATED_ORDER = [
 
   // City lights and celebration - Singapore nights
   "/media/singapore-marina-bay-sands-professional.jpeg",
-  "/media/singapore-luge-racing-couple.jpeg",
   "/media/istanbul-bridge-night.jpeg",
   "/media/singapore-skyline-upside-down.jpeg",
 
@@ -33,7 +32,7 @@ const CURATED_ORDER = [
   "/media/jet-ski-waving-solo.jpeg",
 
   // Underwater exploration - diving deep together
-  "/media/scuba-diving-underwater-heart.jpeg",
+  "/media/scuba-diving-couple-underwater-heart.jpeg",
 
   // Ancient wonders - Egypt
   "/media/egypt-pyramids-camels-couple.jpeg",
