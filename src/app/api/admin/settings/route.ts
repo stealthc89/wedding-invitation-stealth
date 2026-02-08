@@ -4,8 +4,9 @@ import getDb from "@/lib/db";
 
 // Whitelist of allowed setting keys
 const ALLOWED_SETTINGS = [
-  "rsvp_deadline",      // RSVP deadline date (YYYY-MM-DD)
-  "slideshow_photos",   // Comma-separated list of photo IDs for slideshow
+  "rsvp_deadline",            // RSVP deadline date (YYYY-MM-DD)
+  "slideshow_photos",         // Comma-separated list of photo IDs for slideshow
+  "invite_message_template",  // Custom invite message template with {url} and {name} placeholders
 ] as const;
 
 // GET /api/admin/settings — list all settings
