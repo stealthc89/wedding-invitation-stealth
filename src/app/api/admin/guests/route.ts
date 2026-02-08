@@ -146,6 +146,12 @@ export async function PUT(req: NextRequest) {
   }
 
   const db = getDb();
+
+  // Validate plus_one_allowed range (0-10)
+  const validatedPlusOne = plus_one_allowed !== undefined
+    ? Math.max(0, Math.min(plus_one_allowed, 10))
+    : null;
+
   db.prepare(
     `UPDATE guests SET
       name = COALESCE(?, name),
@@ -159,7 +165,7 @@ export async function PUT(req: NextRequest) {
       dietary_notes = COALESCE(?, dietary_notes),
       updated_at = datetime('now')
     WHERE id = ?`
-  ).run(name, email, plus_one_allowed !== undefined ? plus_one_allowed : null, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, id);
+  ).run(name, email, validatedPlusOne, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, id);
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

@@ -61,18 +61,16 @@ export default function GuestsPage() {
   async function fetchInviteTemplate() {
     const res = await fetch("/api/admin/settings");
     const data = await res.json();
-    const template = data.find((s: { key: string }) => s.key === "invite_message_template");
     const defaultTemplate = "You're invited to Chris & Candice's wedding! 💕\n\nPlease RSVP using your personal link:\n{url}";
-    setInviteTemplate(template?.value || defaultTemplate);
+    setInviteTemplate(data.invite_message_template || defaultTemplate);
   }
 
   async function saveInviteTemplate() {
     await fetch("/api/admin/settings", {
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        key: "invite_message_template",
-        value: tempTemplate,
+        invite_message_template: tempTemplate,
       }),
     });
     setInviteTemplate(tempTemplate);
