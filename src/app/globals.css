@@ -37,8 +37,9 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   opacity: 0;
-  transform: scale(1) translateZ(0);
-  transition: opacity 2.5s cubic-bezier(0.4, 0, 0.2, 1), transform 2.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1.08) translateZ(0);
+  /* Only transition opacity, NOT transform - prevents jump when slide becomes inactive */
+  transition: opacity 2s ease-in-out;
   will-change: opacity, transform;
   /* High quality image rendering */
   image-rendering: -webkit-optimize-contrast;
@@ -53,7 +54,7 @@ body {
 .slideshow-slide.slideshow-active {
   opacity: 1;
   z-index: 1;
-  animation: kenburns 7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: kenburns 7s ease-out forwards;
 }
 
 .slideshow-overlay {
@@ -74,9 +75,6 @@ body {
 @keyframes kenburns {
   0% {
     transform: scale(1) translateZ(0);
-  }
-  85% {
-    transform: scale(1.08) translateZ(0);
   }
   100% {
     transform: scale(1.08) translateZ(0);

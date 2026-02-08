@@ -51,10 +51,28 @@ terraform init
 terraform plan -out=tfplan
 terraform apply tfplan
 
-# Step 7: Get service URL
+# Step 7: Configure public access (IAM binding)
 echo ""
-echo "7️⃣  Getting Cloud Run service URL..."
+echo "7️⃣  Configuring public access to Cloud Run service..."
 cd ..
+IAM_RESULT=$(gcloud run services add-iam-policy-binding wedding-rsvp \
+  --region=$REGION \
+  --member="allUsers" \
+  --role="roles/run.invoker" \
+  --project=$PROJECT_ID 2>&1)
+
+if echo "$IAM_RESULT" | grep -q "Updated IAM policy\|bindings"; then
+  echo "   ✅ Public access configured"
+elif echo "$IAM_RESULT" | grep -q "ALREADY_EXISTS\|already present"; then
+  echo "   ✅ Public access already configured"
+else
+  echo "   ⚠️  IAM binding may have failed, but continuing..."
+  echo "   $IAM_RESULT"
+fi
+
+# Step 8: Get service URL
+echo ""
+echo "8️⃣  Getting Cloud Run service URL..."
 SERVICE_URL=$(terraform -chdir=terraform output -raw service_url 2>/dev/null)
 
 if [ -z "$SERVICE_URL" ]; then
@@ -69,8 +87,8 @@ echo ""
 echo "🌐 Service URL: $SERVICE_URL"
 echo ""
 
-# Step 8: OAuth redirect (one-time setup)
-echo "8️⃣  OAuth Redirect URL (one-time setup)..."
+# Step 9: OAuth redirect (one-time setup)
+echo "9️⃣  OAuth Redirect URL (one-time setup)..."
 echo ""
 echo "📋 Your fixed OAuth redirect URL:"
 echo "   https://celebratingcc.com/api/auth/google/callback"
@@ -84,9 +102,9 @@ echo "   2. Add to 'Authorized redirect URIs': https://celebratingcc.com/api/aut
 echo "   3. Click 'Save'"
 echo ""
 
-# Step 9: Domain Mapping (idempotent)
+# Step 10: Domain Mapping (idempotent)
 echo ""
-echo "9️⃣  Configuring domain mapping..."
+echo "🔟 Configuring domain mapping..."
 DOMAIN="celebratingcc.com"
 DOMAIN_EXISTS=$(gcloud beta run domain-mappings describe $DOMAIN --region=$REGION --project=$PROJECT_ID 2>/dev/null && echo "yes" || echo "no")
 
@@ -107,9 +125,9 @@ else
   echo "   ✅ Domain mapping already exists"
 fi
 
-# Step 10: Configure DNS (idempotent)
+# Step 11: Configure DNS (idempotent)
 echo ""
-echo "🔟 Configuring DNS records..."
+echo "1️⃣1️⃣ Configuring DNS records..."
 DNS_ZONE="celebratingcc-com"
 DNS_NAME="$DOMAIN."
 
@@ -189,10 +207,11 @@ echo "   Direct:  $SERVICE_URL"
 echo "   Custom:  https://$DOMAIN"
 echo ""
 echo "📋 Next Steps:"
-echo "   1. ✅ OAuth redirect URL: https://$DOMAIN/api/auth/google/callback"
-echo "   2. ✅ Domain mapping configured"
-echo "   3. ✅ DNS records configured"
-echo "   4. ⏳ Wait for SSL certificate (can take up to 24 hours)"
+echo "   1. ✅ Public access configured"
+echo "   2. ✅ OAuth redirect URL: https://$DOMAIN/api/auth/google/callback"
+echo "   3. ✅ Domain mapping configured"
+echo "   4. ✅ DNS records configured"
+echo "   5. ⏳ Wait for SSL certificate (can take up to 24 hours)"
 echo ""
 echo "🧪 Test your site:"
 echo "   - Admin portal: https://$DOMAIN/manage"
