@@ -114,15 +114,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Single guest add
-  const { name, email, plus_one_allowed } = await req.json();
+  const { name, email, plus_one_allowed, is_under_10 } = await req.json();
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
   const token = uuidv4();
   db.prepare(
-    "INSERT INTO guests (token, name, email, plus_one_allowed) VALUES (?, ?, ?, ?)"
-  ).run(token, name, email || "", plus_one_allowed ? 1 : 0);
+    "INSERT INTO guests (token, name, email, plus_one_allowed, is_under_10) VALUES (?, ?, ?, ?, ?)"
+  ).run(token, name, email || "", plus_one_allowed || 0, is_under_10 ? 1 : 0);
 
   const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token);
   return NextResponse.json(guest, { status: 201 });
@@ -136,7 +136,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, name, email, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes } =
+  const { id, name, email, plus_one_allowed, is_under_10, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes } =
     await req.json();
   if (!id) {
     return NextResponse.json({ error: "Guest ID required" }, { status: 400 });
@@ -148,6 +148,7 @@ export async function PUT(req: NextRequest) {
       name = COALESCE(?, name),
       email = COALESCE(?, email),
       plus_one_allowed = COALESCE(?, plus_one_allowed),
+      is_under_10 = COALESCE(?, is_under_10),
       rsvp_status = COALESCE(?, rsvp_status),
       attending = COALESCE(?, attending),
       plus_one_attending = COALESCE(?, plus_one_attending),
@@ -155,7 +156,7 @@ export async function PUT(req: NextRequest) {
       dietary_notes = COALESCE(?, dietary_notes),
       updated_at = datetime('now')
     WHERE id = ?`
-  ).run(name, email, plus_one_allowed !== undefined ? (plus_one_allowed ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? (plus_one_attending ? 1 : 0) : null, meal_preference, dietary_notes, id);
+  ).run(name, email, plus_one_allowed !== undefined ? plus_one_allowed : null, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, id);
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

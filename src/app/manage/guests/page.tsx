@@ -9,6 +9,7 @@ interface Guest {
   email: string;
   plus_one_allowed: number;
   plus_one_names: string | null;
+  is_under_10: number;
   rsvp_status: string;
   attending: number | null;
   plus_one_attending: number;
@@ -36,6 +37,7 @@ export default function GuestsPage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPlusOneCount, setNewPlusOneCount] = useState(0);
+  const [newIsUnder10, setNewIsUnder10] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Guest>>({});
   const [message, setMessage] = useState("");
@@ -104,11 +106,13 @@ export default function GuestsPage() {
         name: newName,
         email: newEmail,
         plus_one_allowed: newPlusOneCount,
+        is_under_10: newIsUnder10,
       }),
     });
     setNewName("");
     setNewEmail("");
     setNewPlusOneCount(0);
+    setNewIsUnder10(false);
     setShowAdd(false);
     fetchGuests();
   }
@@ -289,6 +293,18 @@ export default function GuestsPage() {
               className="border border-gray-300 rounded px-2 py-1.5 text-sm w-20"
             />
           </div>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              id="newIsUnder10"
+              checked={newIsUnder10}
+              onChange={(e) => setNewIsUnder10(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <label htmlFor="newIsUnder10" className="text-xs text-gray-600 cursor-pointer">
+              Guest is under 10
+            </label>
+          </div>
           <button
             type="submit"
             className="px-3 py-1.5 bg-green-700 text-white rounded text-sm hover:bg-green-800"
@@ -330,6 +346,7 @@ export default function GuestsPage() {
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Under 10</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">RSVP URL</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Invite Message</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
@@ -364,6 +381,16 @@ export default function GuestsPage() {
                           setEditData({ ...editData, email: e.target.value })
                         }
                         className="border rounded px-1 py-0.5 text-sm w-full"
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={editData.is_under_10 !== undefined ? editData.is_under_10 === 1 : g.is_under_10 === 1}
+                        onChange={(e) =>
+                          setEditData({ ...editData, is_under_10: e.target.checked ? 1 : 0 })
+                        }
+                        className="w-4 h-4"
                       />
                     </td>
                     <td className="px-4 py-2" colSpan={5}>
@@ -419,6 +446,15 @@ export default function GuestsPage() {
                         <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-medium">
                           No email
                         </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {g.is_under_10 === 1 ? (
+                        <span className="inline-block text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs font-medium">
+                          Child
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
                       )}
                     </td>
                     <td className="px-4 py-2">

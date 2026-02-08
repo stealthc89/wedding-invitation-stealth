@@ -106,6 +106,11 @@ function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE guests ADD COLUMN plus_one_names TEXT");
   }
 
+  // Migration: add is_under_10 column if missing (for tracking child guests)
+  if (!cols.some((c) => c.name === "is_under_10")) {
+    db.exec("ALTER TABLE guests ADD COLUMN is_under_10 INTEGER DEFAULT 0");
+  }
+
   // Seed default email templates if none exist
   const count = db.prepare("SELECT COUNT(*) as c FROM email_templates").get() as { c: number };
   if (count.c === 0) {
