@@ -12,6 +12,7 @@ interface BackgroundMusicProps {
 export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: BackgroundMusicProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const device = useDeviceDetection();
 
   useEffect(() => {
@@ -27,21 +28,59 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
     }
 
     // Try to auto-play on page load
-    const playAudio = async () => {
+    const tryAutoPlay = async () => {
       try {
         await audio.play();
+        setIsPlaying(true);
       } catch (error) {
         // Auto-play blocked by browser - user must interact first
-        console.log("Auto-play prevented. User interaction required.");
+        console.log("Auto-play prevented. Waiting for user interaction.");
       }
     };
 
-    playAudio();
-  }, [volume, startTime]);
+    tryAutoPlay();
 
-  const toggleMute = () => {
+    // Fallback: Start playing on any user interaction
+    const startOnInteraction = async () => {
+      if (!isPlaying && audio.paused) {
+        try {
+          await audio.play();
+          setIsPlaying(true);
+          // Remove listeners after successful play
+          document.removeEventListener("click", startOnInteraction);
+          document.removeEventListener("touchstart", startOnInteraction);
+          document.removeEventListener("keydown", startOnInteraction);
+        } catch (error) {
+          console.log("Failed to start audio on interaction");
+        }
+      }
+    };
+
+    // Listen for user interaction to start audio
+    document.addEventListener("click", startOnInteraction, { once: true });
+    document.addEventListener("touchstart", startOnInteraction, { once: true });
+    document.addEventListener("keydown", startOnInteraction, { once: true });
+
+    return () => {
+      document.removeEventListener("click", startOnInteraction);
+      document.removeEventListener("touchstart", startOnInteraction);
+      document.removeEventListener("keydown", startOnInteraction);
+    };
+  }, [volume, startTime, isPlaying]);
+
+  const toggleMute = async () => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // If audio hasn't started yet, start it first
+    if (audio.paused) {
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.log("Could not start audio");
+      }
+    }
 
     audio.muted = !audio.muted;
     setIsMuted(audio.muted); // Sync state with actual audio element status
