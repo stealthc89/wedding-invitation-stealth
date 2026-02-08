@@ -16,6 +16,10 @@ interface Guest {
   responded_at: string | null;
 }
 
+interface Settings {
+  invite_message_template: string;
+}
+
 const MEAL_LABELS: Record<string, string> = {
   no_preference: "No preference",
   vegetarian: "Vegetarian",
@@ -34,6 +38,10 @@ export default function GuestsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Guest>>({});
   const [message, setMessage] = useState("");
+  const [inviteTemplate, setInviteTemplate] = useState("");
+  const [editingTemplate, setEditingTemplate] = useState(false);
+  const [tempTemplate, setTempTemplate] = useState("");
+  const [copyStatus, setCopyStatus] = useState<{[key: number]: string}>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
   function fetchGuests() {
@@ -45,8 +53,45 @@ export default function GuestsPage() {
       });
   }
 
+  async function fetchInviteTemplate() {
+    const res = await fetch("/api/admin/settings");
+    const data = await res.json();
+    const template = data.find((s: { key: string }) => s.key === "invite_message_template");
+    const defaultTemplate = "You're invited to Chris & Candice's wedding! 💕\n\nPlease RSVP using your personal link:\n{url}";
+    setInviteTemplate(template?.value || defaultTemplate);
+  }
+
+  async function saveInviteTemplate() {
+    await fetch("/api/admin/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: "invite_message_template",
+        value: tempTemplate,
+      }),
+    });
+    setInviteTemplate(tempTemplate);
+    setEditingTemplate(false);
+    setMessage("Invite message template saved");
+  }
+
+  function getInviteMessage(guest: Guest): string {
+    const url = `${baseUrl}/rsvp/${guest.token}`;
+    return inviteTemplate.replace("{url}", url).replace("{name}", guest.name);
+  }
+
+  async function copyInviteMessage(guest: Guest) {
+    const inviteMessage = getInviteMessage(guest);
+    await navigator.clipboard.writeText(inviteMessage);
+    setCopyStatus({ ...copyStatus, [guest.id]: "Copied!" });
+    setTimeout(() => {
+      setCopyStatus({ ...copyStatus, [guest.id]: "" });
+    }, 2000);
+  }
+
   useEffect(() => {
     fetchGuests();
+    fetchInviteTemplate();
   }, []);
 
   async function addGuest(e: React.FormEvent) {
@@ -158,6 +203,56 @@ export default function GuestsPage() {
         <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded">{message}</p>
       )}
 
+      {/* Invite Message Template Editor */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-800">Invite Message Template</h2>
+          {!editingTemplate && (
+            <button
+              onClick={() => {
+                setTempTemplate(inviteTemplate);
+                setEditingTemplate(true);
+              }}
+              className="px-3 py-1 bg-gray-800 text-white rounded text-sm hover:bg-gray-700"
+            >
+              Edit Template
+            </button>
+          )}
+        </div>
+        {editingTemplate ? (
+          <div className="space-y-2">
+            <textarea
+              value={tempTemplate}
+              onChange={(e) => setTempTemplate(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono"
+              placeholder="Use {url} for the personalized link and {name} for guest name"
+            />
+            <p className="text-xs text-gray-500">
+              Use <code className="bg-gray-100 px-1 rounded">{"{url}"}</code> for the personalized RSVP link and <code className="bg-gray-100 px-1 rounded">{"{name}"}</code> for the guest's name
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={saveInviteTemplate}
+                className="px-3 py-1.5 bg-green-700 text-white rounded text-sm hover:bg-green-800"
+              >
+                Save Template
+              </button>
+              <button
+                onClick={() => setEditingTemplate(false)}
+                className="px-3 py-1.5 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-50 rounded p-3 font-mono text-sm whitespace-pre-wrap text-gray-700">
+            {inviteTemplate}
+          </div>
+        )}
+      </div>
+
       {/* Add Guest Form */}
       {showAdd && (
         <form
@@ -231,6 +326,8 @@ export default function GuestsPage() {
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">RSVP URL</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Invite Message</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Attending</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">+1</th>
@@ -265,7 +362,7 @@ export default function GuestsPage() {
                         className="border rounded px-1 py-0.5 text-sm w-full"
                       />
                     </td>
-                    <td className="px-4 py-2" colSpan={3}>
+                    <td className="px-4 py-2" colSpan={5}>
                       <label className="flex items-center gap-1 text-sm">
                         <input
                           type="checkbox"
@@ -316,6 +413,43 @@ export default function GuestsPage() {
                           No email
                         </span>
                       )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() =>
+                          navigator.clipboard.writeText(
+                            `${baseUrl}/rsvp/${g.token}`
+                          )
+                        }
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs hover:bg-blue-100 font-medium"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy URL
+                      </button>
+                    </td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => copyInviteMessage(g)}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs hover:bg-green-100 font-medium whitespace-nowrap"
+                      >
+                        {copyStatus[g.id] ? (
+                          <>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {copyStatus[g.id]}
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy Message
+                          </>
+                        )}
+                      </button>
                     </td>
                     <td className="px-4 py-2">
                       <span
@@ -369,16 +503,6 @@ export default function GuestsPage() {
                         title={!g.email ? "No email address" : "Send invitation email"}
                       >
                         Email
-                      </button>
-                      <button
-                        onClick={() =>
-                          navigator.clipboard.writeText(
-                            `${baseUrl}/rsvp/${g.token}`
-                          )
-                        }
-                        className="text-gray-500 hover:underline text-xs"
-                      >
-                        Copy Link
                       </button>
                       <button
                         onClick={() => deleteGuest(g.id)}
