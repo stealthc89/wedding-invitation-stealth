@@ -56,7 +56,17 @@ body {
 .slideshow-slide.slideshow-active {
   opacity: 1;
   z-index: 1;
-  animation: kenburns 7s ease-out forwards;
+  /* Slightly longer animation (7.5s) with 8s interval = 0.5s buffer */
+  animation: kenburns 7.5s ease-out forwards;
+}
+
+/* Exit state: keep zoomed while fading out to prevent snap-back */
+.slideshow-slide.slideshow-exit {
+  opacity: 0;
+  /* Force scale to stay at 1.08 while fading out */
+  transform: scale(1.08) translateZ(0);
+  transition: opacity 2s ease-in-out;
+  z-index: 0;
 }
 
 .slideshow-overlay {

@@ -31,12 +31,13 @@ interface PhotoSlideshowProps {
 
 export default function PhotoSlideshow({
   photos: photosProp,
-  interval = 7000,
+  interval = 8000, // 8s interval (7s animation + 1s buffer)
   overlay = "dark",
   children,
 }: PhotoSlideshowProps) {
   const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
   const [current, setCurrent] = useState(0);
+  const [previous, setPrevious] = useState<number | null>(null);
   const [loaded, setLoaded] = useState<Set<number>>(new Set());
   const [activePhotos, setActivePhotos] = useState<string[]>([]);
   const INITIAL_BATCH_SIZE = 6; // Start slideshow after first 6 images
@@ -58,6 +59,13 @@ export default function PhotoSlideshow({
   }, [photosProp]);
 
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
+
+  // Initialize activePhotos with first image to avoid black screen
+  useEffect(() => {
+    if (activePhotos.length === 0 && photos.length > 0) {
+      setActivePhotos([photos[0]]);
+    }
+  }, [photos, activePhotos.length]);
 
   // Preload images with priority for first batch
   useEffect(() => {
@@ -106,11 +114,12 @@ export default function PhotoSlideshow({
     if (activePhotos.length === 0) return;
 
     const timer = setInterval(() => {
+      setPrevious(current);
       setCurrent((prev) => (prev + 1) % activePhotos.length);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [activePhotos.length, interval]);
+  }, [activePhotos.length, interval, current]);
 
   const overlayClass =
     overlay === "dark"
@@ -121,16 +130,22 @@ export default function PhotoSlideshow({
 
   return (
     <div className="slideshow-container">
-      {activePhotos.map((photo, i) => (
-        <div
-          key={photo}
-          className={`slideshow-slide ${i === current ? "slideshow-active" : ""}`}
-          style={{
-            backgroundImage: `url(${photo})`,
-            transformOrigin: ZOOM_ORIGINS[i % ZOOM_ORIGINS.length],
-          }}
-        />
-      ))}
+      {activePhotos.map((photo, i) => {
+        const isActive = i === current;
+        const isExiting = i === previous;
+        const className = `slideshow-slide ${isActive ? "slideshow-active" : ""} ${isExiting && !isActive ? "slideshow-exit" : ""}`;
+
+        return (
+          <div
+            key={photo}
+            className={className}
+            style={{
+              backgroundImage: `url(${photo})`,
+              transformOrigin: ZOOM_ORIGINS[i % ZOOM_ORIGINS.length],
+            }}
+          />
+        );
+      })}
       {overlay !== "none" && <div className={`slideshow-overlay ${overlayClass}`} />}
       <div className="slideshow-content">{children}</div>
     </div>
