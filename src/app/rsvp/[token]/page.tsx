@@ -35,7 +35,8 @@ export default function RSVPPage() {
   const [submitted, setSubmitted] = useState(false);
 
   const [attending, setAttending] = useState<boolean | null>(null);
-  const [plusOneAttending, setPlusOneAttending] = useState(false);
+  const [plusOneCount, setPlusOneCount] = useState(0);
+  const [plusOneNames, setPlusOneNames] = useState<string[]>([]);
   const [mealPreference, setMealPreference] = useState("no_preference");
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [email, setEmail] = useState("");
@@ -56,7 +57,14 @@ export default function RSVPPage() {
         if (data.rsvp_status === "responded") {
           setSubmitted(true);
           setAttending(data.attending === 1);
-          setPlusOneAttending(data.plus_one_attending === 1);
+          setPlusOneCount(data.plus_one_attending || 0);
+          if (data.plus_one_names) {
+            try {
+              setPlusOneNames(JSON.parse(data.plus_one_names));
+            } catch {
+              setPlusOneNames([]);
+            }
+          }
           setMealPreference(data.meal_preference || "no_preference");
           setDietaryNotes(data.dietary_notes || "");
         }
@@ -73,6 +81,15 @@ export default function RSVPPage() {
       return;
     }
 
+    // Validate plus one names
+    if (attending && plusOneCount > 0) {
+      const validNames = plusOneNames.filter(name => name && name.trim());
+      if (validNames.length !== plusOneCount) {
+        setError(`Please provide names for all ${plusOneCount} additional guest${plusOneCount > 1 ? 's' : ''}`);
+        return;
+      }
+    }
+
     setSubmitting(true);
     setError("");
     try {
@@ -83,7 +100,8 @@ export default function RSVPPage() {
           token,
           email,
           attending,
-          plus_one_attending: plusOneAttending,
+          plus_one_attending: plusOneCount,
+          plus_one_names: attending && plusOneCount > 0 ? JSON.stringify(plusOneNames.slice(0, plusOneCount)) : null,
           meal_preference: attending ? mealPreference : null,
           dietary_notes: attending ? dietaryNotes : null,
         }),
@@ -164,11 +182,19 @@ export default function RSVPPage() {
               <p>
                 <strong>Attending:</strong> {attending ? "Yes" : "No"}
               </p>
-              {attending && guest.plus_one_allowed === 1 && (
-                <p>
-                  <strong>Plus one:</strong>{" "}
-                  {plusOneAttending ? "Yes" : "No"}
-                </p>
+              {attending && guest.plus_one_allowed > 0 && (
+                <div>
+                  <p>
+                    <strong>Additional guests:</strong> {plusOneCount}
+                  </p>
+                  {plusOneCount > 0 && plusOneNames.length > 0 && (
+                    <ul className="ml-4 mt-1 text-sm">
+                      {plusOneNames.map((name, i) => (
+                        <li key={i}>• {name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
               {attending && (
                 <p>
@@ -269,36 +295,62 @@ export default function RSVPPage() {
               </div>
             </div>
 
-            {/* Plus One */}
-            {attending && guest.plus_one_allowed === 1 && (
+            {/* Additional Guests */}
+            {attending && guest.plus_one_allowed > 0 && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-3">
-                  Will you be bringing a plus one?
+                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                  How many additional guests are you bringing?
                 </label>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPlusOneAttending(true)}
-                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
-                      plusOneAttending
-                        ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                        : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
-                    }`}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPlusOneAttending(false)}
-                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
-                      !plusOneAttending
-                        ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                        : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
-                    }`}
-                  >
-                    No
-                  </button>
+                <p className="text-xs text-[var(--color-muted)] mb-3">
+                  You may bring up to {guest.plus_one_allowed} additional guest{guest.plus_one_allowed > 1 ? 's' : ''}
+                </p>
+                <div className="flex gap-2 mb-4">
+                  {Array.from({ length: guest.plus_one_allowed + 1 }, (_, i) => i).map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setPlusOneCount(num);
+                        setPlusOneNames(Array(num).fill(''));
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all font-medium ${
+                        plusOneCount === num
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                          : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
                 </div>
+
+                {/* Names for each additional guest */}
+                {plusOneCount > 0 && (
+                  <div className="space-y-3 bg-gray-50/50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-[var(--color-primary)]">
+                      Please provide the name{plusOneCount > 1 ? 's' : ''} of your additional guest{plusOneCount > 1 ? 's' : ''}:
+                    </p>
+                    {Array.from({ length: plusOneCount }, (_, i) => (
+                      <div key={i}>
+                        <label className="block text-xs text-[var(--color-muted)] mb-1">
+                          Guest {i + 1} <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={plusOneNames[i] || ''}
+                          onChange={(e) => {
+                            const newNames = [...plusOneNames];
+                            newNames[i] = e.target.value;
+                            setPlusOneNames(newNames);
+                          }}
+                          required
+                          placeholder="Full name"
+                          className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

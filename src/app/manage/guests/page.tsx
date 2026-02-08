@@ -8,6 +8,7 @@ interface Guest {
   name: string;
   email: string;
   plus_one_allowed: number;
+  plus_one_names: string | null;
   rsvp_status: string;
   attending: number | null;
   plus_one_attending: number;
@@ -34,7 +35,7 @@ export default function GuestsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
-  const [newPlusOne, setNewPlusOne] = useState(false);
+  const [newPlusOneCount, setNewPlusOneCount] = useState(0);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Guest>>({});
   const [message, setMessage] = useState("");
@@ -102,12 +103,12 @@ export default function GuestsPage() {
       body: JSON.stringify({
         name: newName,
         email: newEmail,
-        plus_one_allowed: newPlusOne,
+        plus_one_allowed: newPlusOneCount,
       }),
     });
     setNewName("");
     setNewEmail("");
-    setNewPlusOne(false);
+    setNewPlusOneCount(0);
     setShowAdd(false);
     fetchGuests();
   }
@@ -277,14 +278,17 @@ export default function GuestsPage() {
               className="border border-gray-300 rounded px-2 py-1.5 text-sm"
             />
           </div>
-          <label className="flex items-center gap-1.5 text-sm text-gray-600">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Extra Guests</label>
             <input
-              type="checkbox"
-              checked={newPlusOne}
-              onChange={(e) => setNewPlusOne(e.target.checked)}
+              type="number"
+              min="0"
+              max="10"
+              value={newPlusOneCount}
+              onChange={(e) => setNewPlusOneCount(parseInt(e.target.value) || 0)}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm w-20"
             />
-            Plus one
-          </label>
+          </div>
           <button
             type="submit"
             className="px-3 py-1.5 bg-green-700 text-white rounded text-sm hover:bg-green-800"
@@ -363,23 +367,26 @@ export default function GuestsPage() {
                       />
                     </td>
                     <td className="px-4 py-2" colSpan={5}>
-                      <label className="flex items-center gap-1 text-sm">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">Extra guests:</label>
                         <input
-                          type="checkbox"
-                          checked={
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={
                             editData.plus_one_allowed !== undefined
-                              ? !!editData.plus_one_allowed
-                              : !!g.plus_one_allowed
+                              ? editData.plus_one_allowed
+                              : g.plus_one_allowed
                           }
                           onChange={(e) =>
                             setEditData({
                               ...editData,
-                              plus_one_allowed: e.target.checked ? 1 : 0,
+                              plus_one_allowed: parseInt(e.target.value) || 0,
                             })
                           }
+                          className="border border-gray-300 rounded px-2 py-1 text-sm w-20"
                         />
-                        Plus one allowed
-                      </label>
+                      </div>
                     </td>
                     <td></td>
                     <td className="px-4 py-2">
@@ -466,10 +473,8 @@ export default function GuestsPage() {
                       {g.attending === 1 ? "Yes" : g.attending === 0 ? "No" : "—"}
                     </td>
                     <td className="px-4 py-2 text-gray-600">
-                      {g.plus_one_allowed
-                        ? g.plus_one_attending
-                          ? "Yes"
-                          : "Allowed"
+                      {g.plus_one_allowed > 0
+                        ? `${g.plus_one_attending}/${g.plus_one_allowed}`
                         : "—"}
                     </td>
                     <td className="px-4 py-2 text-gray-600">

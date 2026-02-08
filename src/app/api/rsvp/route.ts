@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
   const guest = db
     .prepare(
-      "SELECT id, name, email, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
+      "SELECT id, name, email, plus_one_allowed, plus_one_names, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
     )
     .get(token);
 
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 // POST /api/rsvp — submit RSVP
 export async function POST(req: NextRequest) {
   try {
-    const { token, email, attending, plus_one_attending, meal_preference, dietary_notes } = await req.json();
+    const { token, email, attending, plus_one_attending, plus_one_names, meal_preference, dietary_notes } = await req.json();
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email address required" }, { status: 400 });
     }
+
+    // Validate plus one count
+    const plusOneCount = typeof plus_one_attending === "number" ? Math.max(0, Math.min(plus_one_attending, 10)) : 0;
 
     const db = getDb();
     const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token) as
@@ -88,7 +91,8 @@ export async function POST(req: NextRequest) {
         ? "no_preference"
         : null;
 
-    const plusOne = attending && guest.plus_one_allowed && plus_one_attending ? 1 : 0;
+    const finalPlusOneCount = attending && guest.plus_one_allowed ? plusOneCount : 0;
+    const finalPlusOneNames = attending && finalPlusOneCount > 0 && plus_one_names ? plus_one_names : null;
     const notes = attending && dietary_notes ? String(dietary_notes).slice(0, 500) : null;
 
     db.prepare(
@@ -97,12 +101,13 @@ export async function POST(req: NextRequest) {
         email = ?,
         attending = ?,
         plus_one_attending = ?,
+        plus_one_names = ?,
         meal_preference = ?,
         dietary_notes = ?,
         responded_at = datetime('now'),
         updated_at = datetime('now')
       WHERE token = ?`
-    ).run(email, attending ? 1 : 0, plusOne, meal, notes, token);
+    ).run(email, attending ? 1 : 0, finalPlusOneCount, finalPlusOneNames, meal, notes, token);
 
     // Assign balanced photo challenges if attending
     let assignedChallenges: string[] = [];

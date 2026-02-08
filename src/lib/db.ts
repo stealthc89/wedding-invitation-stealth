@@ -101,6 +101,11 @@ function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE guests ADD COLUMN dietary_notes TEXT");
   }
 
+  // Migration: add plus_one_names column if missing (for storing JSON array of companion names)
+  if (!cols.some((c) => c.name === "plus_one_names")) {
+    db.exec("ALTER TABLE guests ADD COLUMN plus_one_names TEXT");
+  }
+
   // Seed default email templates if none exist
   const count = db.prepare("SELECT COUNT(*) as c FROM email_templates").get() as { c: number };
   if (count.c === 0) {
