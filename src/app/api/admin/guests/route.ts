@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
         rsvp_status: g.rsvp_status,
         attending: g.attending === 1 ? "yes" : g.attending === 0 ? "no" : "",
         plus_one_attending: g.plus_one_attending || 0,
+        plus_one_names: g.plus_one_names || "",
         meal_preference: g.meal_preference || "",
         dietary_notes: g.dietary_notes || "",
         responded_at: g.responded_at || "",
@@ -98,8 +99,14 @@ export async function POST(req: NextRequest) {
         const plusOneRaw = row.plus_one_allowed || row["Plus One"] || row.plus_one || "0";
         if (!name) continue;
 
-        // Parse numeric value (0-10), fallback to 0 if invalid
-        const plusOneCount = Math.max(0, Math.min(parseInt(plusOneRaw) || 0, 10));
+        // Parse both legacy boolean strings ("yes"/"true") and numeric values (0-10)
+        const plusOneLower = String(plusOneRaw).toLowerCase().trim();
+        let plusOneCount = 0;
+        if (["yes", "true", "1"].includes(plusOneLower)) {
+          plusOneCount = 1; // Legacy boolean format
+        } else {
+          plusOneCount = Math.max(0, Math.min(parseInt(plusOneRaw) || 0, 10));
+        }
 
         insert.run(
           uuidv4(),
