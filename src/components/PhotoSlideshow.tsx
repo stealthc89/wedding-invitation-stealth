@@ -60,12 +60,12 @@ export default function PhotoSlideshow({
 
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
 
-  // Initialize activePhotos with first image to avoid black screen
+  // Initialize activePhotos with first image only after it's actually loaded
   useEffect(() => {
-    if (activePhotos.length === 0 && photos.length > 0) {
+    if (activePhotos.length === 0 && photos.length > 0 && loaded.has(0)) {
       setActivePhotos([photos[0]]);
     }
-  }, [photos, activePhotos.length]);
+  }, [photos, activePhotos.length, loaded.size]);
 
   // Preload images with priority for first batch
   useEffect(() => {

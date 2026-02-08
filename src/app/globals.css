@@ -63,10 +63,11 @@ body {
 /* Exit state: keep zoomed while fading out to prevent snap-back */
 .slideshow-slide.slideshow-exit {
   opacity: 0;
-  /* Force scale to stay at 1.08 while fading out */
-  transform: scale(1.08) translateZ(0);
   transition: opacity 2s ease-in-out;
   z-index: 0;
+  /* Keep the animation context alive but paused at its current state */
+  /* This prevents the snap from animation -> transform by letting the animation finish smoothly */
+  animation-play-state: paused;
 }
 
 .slideshow-overlay {
