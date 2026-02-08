@@ -8,21 +8,34 @@
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
-// Manually load .env.local
-const envFile = fs.readFileSync('.env.local', 'utf8');
-envFile.split('\n').forEach(line => {
-  const match = line.match(/^([^#=]+)=(.*)$/);
-  if (match) {
-    const key = match[1].trim();
-    let value = match[2].trim();
-    // Remove quotes if present
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
+// Manually load .env.local with error handling
+try {
+  const envFile = fs.readFileSync('.env.local', 'utf8');
+  envFile.split('\n').forEach(line => {
+    const match = line.match(/^([^#=]+)=(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      let value = match[2].trim();
+      // Remove quotes if present
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      process.env[key] = value;
     }
-    process.env[key] = value;
+  });
+} catch (error) {
+  if (error.code === 'ENOENT') {
+    console.error('❌ Error: .env.local file not found');
+    console.error('\nPlease create .env.local with your email configuration:');
+    console.error('  1. Copy .env.example to .env.local');
+    console.error('  2. Fill in SMTP_PASS and other credentials');
+    console.error('  3. Run this script again\n');
+  } else {
+    console.error('❌ Error reading .env.local:', error.message);
   }
-});
+  process.exit(1);
+}
 
 async function testEmail() {
   console.log('🧪 Testing email configuration...\n');
