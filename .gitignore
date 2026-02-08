@@ -40,10 +40,6 @@ data/*.db-wal
 data/*.db-shm
 /backups
 
-# media uploads (keep gitkeep)
-public/media/*
-!public/media/.gitkeep
-
 # vercel
 .vercel
 
