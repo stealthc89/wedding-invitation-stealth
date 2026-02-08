@@ -9,49 +9,49 @@ const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 // Curated slideshow order - tells a romantic love story journey
 const CURATED_ORDER = [
   // Start with romantic Venice - elegant, timeless love
-  "/media/venice-basilica-couple-kiss.jpeg",
-  "/media/venice-dock-couple-portrait.jpeg",
-  "/media/venice-gondola-romantic-moment.jpeg",
-  "/media/venice-gondola-narrow-canal.jpeg",
-  "/media/venice-gondola-rialto-bridge.jpeg",
+  "/media/venice-gondola-romantic-moment.webp",
+  "/media/venice-basilica-couple-kiss.webp",
+  "/media/venice-dock-couple-portrait.webp",
+  "/media/venice-gondola-narrow-canal.webp",
+  "/media/venice-gondola-rialto-bridge.webp",
 
   // City lights and celebration - Singapore nights
-  "/media/singapore-marina-bay-sands-professional.jpeg",
-  "/media/istanbul-bridge-night.jpeg",
-  "/media/singapore-skyline-upside-down.jpeg",
+  "/media/singapore-marina-bay-sands-professional.webp",
+  "/media/istanbul-bridge-night.webp",
+  "/media/singapore-skyline-upside-down.webp",
 
   // Tropical paradise and adventure - Bali
-  "/media/bali-temple-jumping-reflection.jpeg",
-  "/media/bali-heart-swing-frame.jpeg",
-  "/media/waterfall-tropical-jungle.jpeg",
+  "/media/bali-temple-jumping-reflection.webp",
+  "/media/bali-heart-swing-frame.webp",
+  "/media/waterfall-tropical-jungle.webp",
 
   // Beach adventures - water and sun
-  "/media/kayaking-couple-selfie.jpeg",
-  "/media/beach-cliffs-upside-down.jpeg",
-  "/media/jet-ski-couple-ocean.jpeg",
-  "/media/jet-ski-waving-solo.jpeg",
+  "/media/kayaking-couple-selfie.webp",
+  "/media/beach-cliffs-upside-down.webp",
+  "/media/jet-ski-couple-ocean.webp",
+  "/media/jet-ski-waving-solo.webp",
 
   // Underwater exploration - diving deep together
-  "/media/scuba-diving-couple-underwater-heart.jpeg",
+  "/media/scuba-diving-couple-underwater-heart.webp",
 
   // Ancient wonders - Egypt
-  "/media/egypt-pyramids-camels-couple.jpeg",
-  "/media/desert-sand-dunes-upside-down.jpeg",
+  "/media/egypt-pyramids-camels-couple.webp",
+  "/media/desert-sand-dunes-upside-down.webp",
 
   // Winter romance - snow and mountains
-  "/media/snow-mountains-sunset-cuddle.jpeg",
-  "/media/skiing-couple-mountain-slopes.jpeg",
-  "/media/ski-resort-ipsa-sign-couple.jpeg",
-  "/media/snow-mountains-golden-hour.jpeg",
+  "/media/snow-mountains-sunset-cuddle.webp",
+  "/media/skiing-couple-mountain-slopes.webp",
+  "/media/ski-resort-ipsa-sign-couple.webp",
+  "/media/snow-mountains-golden-hour.webp",
 
   // Fun adventures together
-  "/media/boxing-ring-couple.jpeg",
-  "/media/bar-upside-down-selfie.jpeg",
+  "/media/boxing-ring-couple.webp",
+  "/media/bar-upside-down-selfie.webp",
 
   // Grand finale - elegant and artistic
-  "/media/palace-grand-staircase-upside-down.jpeg",
-  "/media/palace-ornate-ceiling-upside-down.jpeg",
-  "/media/purple-tunnel-solo.jpeg",
+  "/media/palace-grand-staircase-upside-down.webp",
+  "/media/palace-ornate-ceiling-upside-down.webp",
+  "/media/purple-tunnel-solo.webp",
 ];
 
 // GET /api/slideshow — public endpoint, returns photo paths for the slideshow
