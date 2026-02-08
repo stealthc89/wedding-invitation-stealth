@@ -46,3 +46,4 @@ data/*.db-shm
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+terraform/.terraform/
