@@ -38,6 +38,7 @@ export default function PhotoSlideshow({
   const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState<Set<number>>(new Set());
+  const [allImagesLoaded, setAllImagesLoaded] = useState(false);
 
   // Fetch slideshow photos dynamically if no explicit photos prop
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function PhotoSlideshow({
 
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
 
-  // Preload images: prioritize first 2 images for fast initial load
+  // Preload all images eagerly
   useEffect(() => {
     if (photos.length === 0) return;
 
@@ -65,8 +66,8 @@ export default function PhotoSlideshow({
       if (!loaded.has(index)) {
         const img = new Image();
         img.src = photo;
-        // Eagerly load first 2 images, lazy load the rest for better performance
-        img.loading = index < 2 ? "eager" : "lazy";
+        // Eagerly load all images
+        img.loading = "eager";
         img.decoding = "async";
         // Prioritize first image for immediate display
         if (index === 0) {
@@ -81,17 +82,25 @@ export default function PhotoSlideshow({
         };
       }
     });
-  }, [photos]); // Removed 'loaded' to prevent infinite loop
+  }, [photos]);
 
+  // Check if all images are loaded
   useEffect(() => {
-    if (photos.length === 0) return;
+    if (photos.length > 0 && loaded.size === photos.length) {
+      setAllImagesLoaded(true);
+    }
+  }, [loaded.size, photos.length]);
+
+  // Start slideshow timer ONLY after all images are loaded
+  useEffect(() => {
+    if (photos.length === 0 || !allImagesLoaded) return;
 
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % photos.length);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [photos.length, interval]); // Removed 'current' to prevent interval recreation
+  }, [photos.length, interval, allImagesLoaded]);
 
   const overlayClass =
     overlay === "dark"
