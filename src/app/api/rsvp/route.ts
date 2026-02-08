@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import getDb from "@/lib/db";
+import { sendTemplateEmail } from "@/lib/email";
 
 // GET /api/rsvp?token=xxx — fetch guest info by token
 export async function GET(req: NextRequest) {
@@ -22,7 +23,19 @@ export async function GET(req: NextRequest) {
   // Include RSVP deadline if set
   const deadlineSetting = db.prepare("SELECT value FROM settings WHERE key = 'rsvp_deadline'").get() as { value: string } | undefined;
 
-  return NextResponse.json({ ...(guest as Record<string, unknown>), rsvp_deadline: deadlineSetting?.value || null });
+  // Include assigned photo challenges
+  const guestRecord = guest as Record<string, unknown>;
+  const challenges = db
+    .prepare(
+      "SELECT pc.text FROM guest_challenges gc JOIN photo_challenges pc ON pc.id = gc.challenge_id WHERE gc.guest_id = ?"
+    )
+    .all(guestRecord.id) as { text: string }[];
+
+  return NextResponse.json({
+    ...guestRecord,
+    rsvp_deadline: deadlineSetting?.value || null,
+    challenges: challenges.map((c) => c.text),
+  });
 }
 
 // POST /api/rsvp — submit RSVP
@@ -87,7 +100,38 @@ export async function POST(req: NextRequest) {
       WHERE token = ?`
     ).run(attending ? 1 : 0, plusOne, meal, notes, token);
 
-    return NextResponse.json({ success: true, message: "RSVP submitted successfully" });
+    // Assign random photo challenges if attending
+    let assignedChallenges: string[] = [];
+    if (attending) {
+      const allChallenges = db
+        .prepare("SELECT id, text FROM photo_challenges")
+        .all() as { id: number; text: string }[];
+
+      if (allChallenges.length > 0) {
+        // Shuffle and pick 2-3
+        const count = Math.min(allChallenges.length, allChallenges.length <= 3 ? allChallenges.length : Math.random() < 0.5 ? 2 : 3);
+        const shuffled = allChallenges.sort(() => Math.random() - 0.5).slice(0, count);
+
+        const insertChallenge = db.prepare(
+          "INSERT OR IGNORE INTO guest_challenges (guest_id, challenge_id) VALUES (?, ?)"
+        );
+        for (const c of shuffled) {
+          insertChallenge.run(guest.id, c.id);
+        }
+        assignedChallenges = shuffled.map((c) => c.text);
+      }
+    }
+
+    // Send confirmation email (fire-and-forget, don't block response)
+    if (attending) {
+      sendTemplateEmail(guest.id as number, "confirmation").catch(() => {});
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "RSVP submitted successfully",
+      challenges: assignedChallenges,
+    });
   } catch (error) {
     console.error("RSVP error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

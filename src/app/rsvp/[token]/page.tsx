@@ -38,6 +38,7 @@ export default function RSVPPage() {
   const [mealPreference, setMealPreference] = useState("no_preference");
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [deadline, setDeadline] = useState<string | null>(null);
+  const [challenges, setChallenges] = useState<string[]>([]);
 
   useEffect(() => {
     fetch(`/api/rsvp?token=${token}`)
@@ -48,6 +49,7 @@ export default function RSVPPage() {
       .then((data) => {
         setGuest(data);
         if (data.rsvp_deadline) setDeadline(data.rsvp_deadline);
+        if (data.challenges) setChallenges(data.challenges);
         if (data.rsvp_status === "responded") {
           setSubmitted(true);
           setAttending(data.attending === 1);
@@ -78,11 +80,12 @@ export default function RSVPPage() {
         }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Failed to submit RSVP");
       }
 
+      if (data.challenges) setChallenges(data.challenges);
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -169,6 +172,24 @@ export default function RSVPPage() {
                 </p>
               )}
             </div>
+            {attending && challenges.length > 0 && (
+              <div className="border-t border-[var(--color-border)] pt-4 mb-4 text-left">
+                <p className="text-sm font-semibold text-[var(--color-primary)] mb-2">
+                  Your Photo Challenges
+                </p>
+                <p className="text-xs text-[var(--color-muted)] mb-2">
+                  Snap these at the wedding and upload them via the QR code at the venue!
+                </p>
+                <ul className="space-y-1">
+                  {challenges.map((c, i) => (
+                    <li key={i} className="text-sm text-[var(--color-muted)] flex items-start gap-2">
+                      <span className="text-[var(--color-accent)] font-bold">📸</span>
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <p className="text-sm text-[var(--color-muted)] border-t border-[var(--color-border)] pt-4">
               If you need to make changes, please contact the bride or groom.
             </p>

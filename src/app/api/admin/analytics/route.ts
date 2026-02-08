@@ -45,6 +45,23 @@ export async function GET() {
     )
     .all() as { meal_preference: string; count: number }[];
 
+  // Photo stats
+  const totalPhotos = (
+    db.prepare("SELECT COUNT(*) as c FROM photo_uploads").get() as { c: number }
+  ).c;
+
+  const photosByGuest = db
+    .prepare(
+      "SELECT guest_name, COUNT(*) as count FROM photo_uploads GROUP BY guest_name ORDER BY count DESC LIMIT 10"
+    )
+    .all() as { guest_name: string; count: number }[];
+
+  const photosOverTime = db
+    .prepare(
+      "SELECT DATE(uploaded_at) as date, COUNT(*) as count FROM photo_uploads GROUP BY DATE(uploaded_at) ORDER BY date"
+    )
+    .all() as { date: string; count: number }[];
+
   return NextResponse.json({
     totalInvited,
     totalResponded,
@@ -54,5 +71,8 @@ export async function GET() {
     totalPlusOnes,
     totalHeadcount: totalAttending + totalPlusOnes,
     mealBreakdown,
+    totalPhotos,
+    photosByGuest,
+    photosOverTime,
   });
 }

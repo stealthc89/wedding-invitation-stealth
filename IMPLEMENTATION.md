@@ -20,7 +20,8 @@ Browser ──▶ Cloud Run (single container, max_instances=1)
               ├── Next.js 16 App Router (frontend + API)
               ├── SQLite via better-sqlite3 (journal_mode=DELETE)
               └── GCS native volume mount at /app/data
-                    └── wedding.db (versioned, 30 generations)
+                    ├── wedding.db (versioned, 30 generations)
+                    └── photos/   (guest-uploaded photos)
 ```
 
 **Key constraints:**
@@ -71,18 +72,30 @@ Browser ──▶ Cloud Run (single container, max_instances=1)
 - [x] README with upload instructions (photos, videos, guest list CSV)
 
 ### Phase 5: UX Enhancements & Data Features ✅
-- [x] **Excel (.xlsx) direct upload** — Guest list can be uploaded as .xlsx (parsed via `xlsx` package) or .csv. No manual conversion needed. API auto-detects format by file extension.
-- [x] **Dietary notes field** — Free-text field on RSVP form for allergies/restrictions/special requests. Stored in `guests.dietary_notes` column. Shown in admin guest table and CSV export. DB migration adds column automatically for existing databases.
-- [x] **RSVP deadline enforcement** — Set `rsvp_deadline` key in settings (format: `YYYY-MM-DD`). API returns 410 after deadline. RSVP page shows "Please respond by [date]" above the form. Deadline is inclusive (end of day).
-- [x] **Dynamic slideshow** — `GET /api/slideshow` (public, no auth) returns photo list. Checks `slideshow_photos` setting (JSON array) first, then falls back to scanning `public/media/` for image files. PhotoSlideshow component fetches dynamically — no code change needed to add/remove photos at runtime.
-- [x] **User checklist in README** — Step-by-step checklist of things only the user can do (add photos, create OAuth creds, set up SMTP, upload guest list, customize templates, etc.)
+- [x] **Excel (.xlsx) direct upload** — Guest list can be uploaded as .xlsx or .csv. API auto-detects format.
+- [x] **Dietary notes field** — Free-text on RSVP form for allergies/restrictions. DB auto-migrates.
+- [x] **RSVP deadline enforcement** — `rsvp_deadline` setting; API returns 410 after date.
+- [x] **Dynamic slideshow** — `GET /api/slideshow` fetches from settings or scans `public/media/`.
+- [x] **User checklist in README** — Step-by-step checklist of things only the user can do.
+
+### Phase 6: Photo Challenges & Guest Photo Upload ✅
+- [x] **Photo challenges CRUD** — Admin manages text-based photo prompts via `/manage/challenges`. API: `GET/POST/PUT/DELETE /api/admin/challenges`. Stored in `photo_challenges` table.
+- [x] **Challenge assignment on RSVP** — When a guest accepts, 2–3 random challenges from the pool are assigned and stored in `guest_challenges` (deterministic per guest, no reassignment on refresh). Shown on the RSVP confirmation page.
+- [x] **Public photo upload page** (`/upload`) — Mobile-first, no auth. Guest enters name + selects photos (JPG/PNG/WebP/HEIC, max 10 MB each, max 20 per upload). No login, no CAPTCHA.
+- [x] **Upload API** (`POST /api/upload`) — Saves files to `data/photos/` with naming convention `guestname_timestamp_uuid.ext`. Stores metadata in `photo_uploads` table. Best-effort guest name matching against DB.
+- [x] **Admin photo gallery** (`/manage/photos`) — Grid view with thumbnails, filter by guest name, individual download, delete. Shows "matched" badge when uploader name matches a guest record.
+- [x] **Zip download** — `GET /api/admin/photos?zip=all` generates a zip of all uploaded photos on the fly (zero-dependency CRC32 implementation).
+- [x] **QR code generation** — `GET /api/admin/qr` returns SVG; `?format=png` returns print-ready 1024px PNG. Shown on dashboard with download buttons. Links to `/upload`.
+- [x] **Confirmation email with challenges** — New `confirmation` template (auto-seeded + migration for existing DBs). Sent automatically on RSVP accept. Includes `{{photo_challenges_section}}` variable with challenge list and upload link.
+- [x] **Photo analytics** — Dashboard shows total photos, guests contributing, top contributor, upload activity over time chart.
+- [x] **Nav updated** — Admin nav now includes Challenges + Photos links.
 
 ---
 
 ## Current State
 
 **Branch**: `claude/wedding-rsvp-platform-UB0Xl`
-**Build**: Passes cleanly (`npm run build` — 23 routes, 0 errors)
+**Build**: Passes cleanly (`npm run build` — 30 routes, 0 errors)
 **Working tree**: Changes pending commit
 
 ### File Layout
@@ -92,26 +105,40 @@ src/
 ├── lib/
 │   ├── db.ts              # SQLite schema, migrations, pragmas
 │   ├── auth.ts            # Google OAuth, JWT, session, email allowlist
-│   └── email.ts           # SMTP transport, template rendering
+│   └── email.ts           # SMTP transport, template rendering, challenge injection
 ├── components/
 │   └── PhotoSlideshow.tsx  # Ken Burns carousel (dynamic photo fetch)
 ├── app/
 │   ├── page.tsx           # Home page (slideshow + hero)
 │   ├── layout.tsx         # Root layout
 │   ├── globals.css        # Tailwind + Ken Burns + glass-card CSS
-│   ├── rsvp/[token]/page.tsx  # Guest RSVP form (meal, dietary notes, deadline)
+│   ├── upload/page.tsx    # Public photo upload page (no auth, mobile-first)
+│   ├── rsvp/[token]/page.tsx  # Guest RSVP form + challenge display
 │   ├── manage/            # Admin portal (Google OAuth protected)
 │   │   ├── layout.tsx     # Nav sidebar, auth guard, logout
 │   │   ├── login/page.tsx # Google sign-in
-│   │   ├── dashboard/page.tsx  # Analytics
+│   │   ├── dashboard/page.tsx  # Analytics + QR code + photo stats
 │   │   ├── guests/page.tsx     # Guest CRUD + CSV/Excel upload
+│   │   ├── challenges/page.tsx # Photo challenge management
+│   │   ├── photos/page.tsx     # Guest photo gallery
 │   │   ├── templates/page.tsx  # Email template editor
-│   │   └── media/page.tsx      # Media gallery + upload
+│   │   └── media/page.tsx      # Site media gallery + upload
 │   └── api/
-│       ├── rsvp/route.ts       # GET/POST guest RSVP (with deadline check)
+│       ├── rsvp/route.ts       # GET/POST guest RSVP + challenge assignment
+│       ├── upload/route.ts     # POST public photo upload (no auth)
 │       ├── slideshow/route.ts  # GET public slideshow photo list
 │       ├── auth/{google,me}/   # OAuth + session endpoints
-│       └── admin/{guests,analytics,email,templates,backup,settings,media}/
+│       └── admin/
+│           ├── challenges/route.ts  # CRUD photo challenges
+│           ├── photos/route.ts      # List/download/zip/delete guest photos
+│           ├── qr/route.ts          # Generate QR code (SVG/PNG)
+│           ├── guests/route.ts      # Guest CRUD + CSV/Excel
+│           ├── analytics/route.ts   # Dashboard stats + photo stats
+│           ├── email/route.ts       # Email sending + log
+│           ├── templates/route.ts   # Email template management
+│           ├── backup/route.ts      # DB download
+│           ├── settings/route.ts    # Settings CRUD
+│           └── media/route.ts       # Site media management
 terraform/main.tf          # GCP Cloud Run + GCS + IAM
 Dockerfile                 # Multi-stage Alpine build
 docker-compose.yml         # Local Docker config
@@ -124,38 +151,48 @@ IMPLEMENTATION.md          # This file
 | Table | Purpose |
 |-------|---------|
 | `guests` | Guest records with token, RSVP status, meal pref, dietary notes, plus-one |
-| `email_templates` | Invitation/reminder/itinerary HTML templates |
+| `email_templates` | Invitation/reminder/itinerary/confirmation HTML templates |
 | `email_log` | Record of every email sent (guest_id, template, status) |
 | `settings` | Key-value config store (rsvp_deadline, slideshow_photos, etc.) |
-
-**Notable columns on `guests`:**
-- `dietary_notes TEXT` — free-text allergies/restrictions (max 500 chars client-side)
-- Auto-migrated via `ALTER TABLE` for existing databases
+| `photo_challenges` | Admin-defined text prompts for wedding photo challenges |
+| `guest_challenges` | Junction table: which challenges were assigned to which guest |
+| `photo_uploads` | Metadata for guest-uploaded photos (name, filename, size, matched guest) |
 
 ### API Surface
 
 | Endpoint | Methods | Auth | Description |
 |----------|---------|------|-------------|
-| `/api/rsvp` | GET, POST | Token | Guest RSVP fetch & submit (includes deadline check) |
-| `/api/slideshow` | GET | Public | Returns slideshow photo paths (from settings or media dir) |
+| `/api/rsvp` | GET, POST | Token | Guest RSVP + challenge assignment + confirmation email |
+| `/api/upload` | POST | Public | Guest photo upload (no auth) |
+| `/api/slideshow` | GET | Public | Slideshow photo paths |
 | `/api/auth/google` | GET | — | Initiate OAuth |
 | `/api/auth/google/callback` | GET | — | OAuth callback |
 | `/api/auth` | DELETE | Session | Logout |
 | `/api/auth/me` | GET | Session | Check session |
-| `/api/admin/guests` | GET, POST, PUT, DELETE | Admin | Guest CRUD + CSV/Excel upload |
-| `/api/admin/analytics` | GET | Admin | Dashboard stats |
+| `/api/admin/guests` | GET, POST, PUT, DELETE | Admin | Guest CRUD + CSV/Excel |
+| `/api/admin/challenges` | GET, POST, PUT, DELETE | Admin | Photo challenge CRUD |
+| `/api/admin/photos` | GET, DELETE | Admin | Photo gallery + download + zip |
+| `/api/admin/qr` | GET | Admin | QR code generation (SVG/PNG) |
+| `/api/admin/analytics` | GET | Admin | Dashboard + photo stats |
 | `/api/admin/email` | GET, POST | Admin | Email log + send |
 | `/api/admin/templates` | GET, PUT | Admin | Template management |
 | `/api/admin/backup` | GET | Admin | Download DB file |
 | `/api/admin/settings` | GET, PUT | Admin | Settings CRUD |
-| `/api/admin/media` | GET, POST, DELETE | Admin | Media management |
+| `/api/admin/media` | GET, POST, DELETE | Admin | Site media management |
 
-### Settings Keys
+### Photo Storage Design
 
-| Key | Format | Purpose |
-|-----|--------|---------|
-| `rsvp_deadline` | `YYYY-MM-DD` | Auto-reject RSVPs after this date; shown on RSVP page |
-| `slideshow_photos` | JSON array of paths | Override slideshow photos (e.g. `["/media/a.jpg","/media/b.jpg"]`) |
+**Approach**: Files stored in `data/photos/` (GCS-mounted on Cloud Run).
+
+**Naming convention**: `guestname_timestamp_uuid.ext` (e.g., `john_smith_1707408000000_a1b2c3d4.jpg`)
+
+**Why this approach:**
+- **Simplicity**: Flat directory, no nesting. Easy to browse, backup, or move.
+- **Cost**: Same GCS bucket as the DB — no additional buckets or services.
+- **Scalability**: For 200 guests × ~5 photos each = ~1000 files. Flat dir handles this fine.
+- **Admin usability**: Filename encodes guest name and timestamp — readable without DB lookup.
+
+**Metadata in SQLite**: `photo_uploads` table tracks guest_name, filename, file_size, matched_guest_id, uploaded_at. Best-effort guest matching by case-insensitive name comparison.
 
 ---
 
@@ -167,13 +204,11 @@ IMPLEMENTATION.md          # This file
 
 1. **Add photos to the repo**
    - User needs to copy their photos into `public/media/`
-   - The slideshow now auto-detects images in that directory — no code change needed
-   - Fallback filenames: `venice.jpg`, `bali.jpg`, `neworleans.jpg`, `beach.jpg`
+   - The slideshow auto-detects images — no code change needed
 
 2. **Provide wedding date, venue, and itinerary**
-   - Needed for: home page display, email template content, deadline setting
-   - Update `src/app/page.tsx` hero text with actual event details
-   - Edit email templates in admin with venue, schedule, dress code, registry
+   - Update `src/app/page.tsx` hero text with event details
+   - Edit email templates in admin with venue, schedule, dress code
    - Set `rsvp_deadline` in admin Settings
 
 3. **Set up Google OAuth credentials**
@@ -183,45 +218,46 @@ IMPLEMENTATION.md          # This file
 
 4. **Set up SMTP for emails**
    - Get API key from Resend, SendGrid, or similar
-   - Set `SMTP_PASS` in env; emails are disabled until configured
+   - Set `SMTP_PASS` in env
+
+5. **Add initial photo challenges**
+   - Go to `/manage/challenges` after deploying
+   - Add 5–10 fun prompts (selfie with groom, dance floor, etc.)
 
 ### Medium Priority (dev tasks)
 
-5. **End-to-end testing**
-   - Spin up dev server, create test guests via API, submit RSVPs, verify email log
-   - Test Google OAuth flow with real credentials
-   - Test CSV and Excel upload with various formats
-   - Verify media upload → slideshow dynamic detection cycle
+6. **End-to-end testing**
+   - Full flow: create guest → send invitation → RSVP → verify challenges assigned → upload photo → verify in gallery
+   - Test Excel upload with various column formats
+   - Test QR code generation and scan
 
-6. **Mobile responsiveness audit**
+7. **Mobile responsiveness audit**
    - Test all pages on mobile viewports
-   - Glass-card form might need padding/sizing adjustments on small screens
-   - Admin portal sidebar may need a hamburger menu on mobile
-
-7. **Email template content polish**
-   - Default templates have placeholder text
-   - Consider adding an HTML email preview pane in the admin template editor
+   - Upload page is mobile-first but admin pages may need work
 
 8. **Admin settings page UI**
-   - Currently settings are managed via API only
    - Build a `/manage/settings` page with form fields for `rsvp_deadline`, `slideshow_photos`, etc.
+   - Currently settings are API-only
+
+9. **Email template content polish**
+   - Default templates have placeholder text
+   - Confirmation template should be reviewed for tone
 
 ### Low Priority
 
-9. **Custom domain & SSL setup**
-   - Document Cloud Run domain mapping or load balancer setup
-   - Update `BASE_URL` and OAuth redirect URIs accordingly
+10. **Custom domain & SSL setup**
+    - Document Cloud Run domain mapping
+    - Update `BASE_URL` and OAuth redirect URIs
 
-10. **Automated CI/CD pipeline**
+11. **Automated CI/CD pipeline**
     - GitHub Actions: build, test, push to GCR, deploy to Cloud Run
-    - The sync workflows already exist; add deploy step
 
-11. **QR code generation for invitations**
-    - Generate QR codes linking to each guest's RSVP URL
-    - Useful for printed invitation cards
+12. **Per-guest QR codes for printed invitations**
+    - Generate individual QR codes linking to each guest's `/rsvp/[token]` URL
 
-12. **Rate limiting on RSVP API**
-    - Tokens are UUIDs so brute-force is unlikely, but consider basic rate limiting
+13. **Rate limiting on upload API**
+    - Currently no rate limiting on the public upload endpoint
+    - Low risk (private event) but could add basic IP-based throttling
 
 ---
 
@@ -229,12 +265,32 @@ IMPLEMENTATION.md          # This file
 
 | Issue | Severity | Notes |
 |-------|----------|-------|
-| Photos not yet added | Blocker for visual testing | User needs to add photos to `public/media/`. Slideshow will auto-detect them. |
-| Wedding details TBD | Blocker for email content | Date, venue, itinerary not yet provided by user |
+| Photos not yet added | Blocker for visual testing | User needs to add photos to `public/media/` |
+| Wedding details TBD | Blocker for email content | Date, venue, itinerary not yet provided |
+| No photo challenges added | Setup needed | Admin must add challenges before first RSVP |
 | No automated tests | Medium | No unit or integration tests exist yet |
-| No rate limiting on RSVP API | Low | Tokens are UUIDs; brute-force is impractical |
-| Media uploads lost on redeploy | Low | Runtime uploads go to container filesystem; only GCS-mounted `/app/data` persists. Primary media should be baked into the build. |
-| Admin settings page missing | Low | Settings exist via API but no admin UI — must use API or DB directly |
+| Upload page has no rate limiting | Low | Private event assumption; tokens not needed |
+| Admin settings page missing | Low | Settings via API only — no UI form |
+| Media uploads lost on redeploy | Low | Runtime uploads to container filesystem don't persist; primary media baked into build |
+
+---
+
+## Security Considerations (Photo Upload)
+
+- **File size limit**: 10 MB per file, enforced server-side
+- **File type validation**: Extension whitelist (jpg, jpeg, png, webp, heic, heif)
+- **Path traversal protection**: Filenames sanitized; `..` and `/` rejected
+- **No cloud credentials exposed**: Upload goes through API, not direct to GCS
+- **Max files per request**: 20 photos per upload
+- **Guest name matching**: Case-insensitive, best-effort — admin can manually reconcile
+- **No auth on upload**: By design (QR code at venue). Private event mitigates abuse risk.
+
+## Cost Impact (Photo Upload)
+
+Assuming 200 guests, ~5 photos each at ~3 MB average:
+- **Storage**: ~3 GB on GCS = ~$0.06/month
+- **Bandwidth**: Minimal (admin download only) = ~$0.01
+- **Total additional cost**: < $0.10/month
 
 ---
 
@@ -247,12 +303,13 @@ IMPLEMENTATION.md          # This file
 | Styling | Tailwind CSS 4 | Utility-first, fast iteration |
 | Database | SQLite (better-sqlite3) | Zero-ops, embedded, fast |
 | Auth | Google OAuth 2.0 + JWT | No passwords, Gmail-only admin |
-| Email | Nodemailer + SMTP | Works with any SMTP provider (Resend, SES, etc.) |
+| Email | Nodemailer + SMTP | Works with any SMTP provider |
+| QR Code | qrcode (npm) | SVG + PNG generation, zero native deps |
 | Hosting | GCP Cloud Run | Scales to zero, free tier |
 | Storage | GCS bucket (native mount) | 11 nines durability, auto-versioning |
 | IaC | Terraform | Reproducible infrastructure |
 | Container | Docker (Alpine) | Small image, standalone Next.js |
-| Excel parsing | xlsx (SheetJS) | Direct .xlsx upload without user conversion |
+| Excel parsing | xlsx (SheetJS) | Direct .xlsx upload |
 
 ---
 
@@ -266,7 +323,7 @@ ADMIN_EMAILS=chrisdmutono@gmail.com,candiceburton4@gmail.com
 JWT_SECRET=                 # Random string for JWT signing
 
 # App
-BASE_URL=https://your-domain.com  # Public URL (used in email links)
+BASE_URL=https://your-domain.com  # Public URL (used in email links + QR code)
 
 # Email (optional — emails disabled if SMTP_PASS is empty)
 SMTP_HOST=smtp.resend.com
@@ -289,3 +346,4 @@ If you're picking this up in a new session:
 4. **Key files**: Start with `src/lib/db.ts` (schema), `src/lib/auth.ts` (auth flow), and `src/app/page.tsx` (home page)
 5. **Check README "Your Checklist"** section for user-dependent tasks
 6. **Update this file** after making changes — keep the completed/proposed sections current
+7. **Photo feature files**: `src/app/upload/page.tsx` (public upload), `src/app/api/upload/route.ts` (upload API), `src/app/manage/challenges/page.tsx` (challenge admin), `src/app/manage/photos/page.tsx` (photo gallery)

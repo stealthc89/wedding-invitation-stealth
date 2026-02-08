@@ -72,8 +72,33 @@ export async function sendTemplateEmail(
   const variables: Record<string, string> = {
     guest_name: guest.name,
     rsvp_link: `${baseUrl}/rsvp/${guest.token}`,
+    upload_link: `${baseUrl}/upload`,
     ...extraVars,
   };
+
+  // Inject photo challenges if guest has any assigned
+  const challenges = db
+    .prepare(
+      "SELECT pc.text FROM guest_challenges gc JOIN photo_challenges pc ON pc.id = gc.challenge_id WHERE gc.guest_id = ?"
+    )
+    .all(guestId) as { text: string }[];
+
+  if (challenges.length > 0) {
+    variables.photo_challenges = challenges
+      .map((c) => `<li style="margin-bottom: 6px;">📸 ${c.text}</li>`)
+      .join("");
+    variables.photo_challenges_section = `
+      <div style="margin: 24px 0; padding: 20px; background: #f8f8f8; border-radius: 8px;">
+        <p style="font-weight: bold; margin-bottom: 12px;">Your Photo Challenges</p>
+        <ul style="list-style: none; padding: 0; margin: 0;">${variables.photo_challenges}</ul>
+        <p style="font-size: 13px; color: #888; margin-top: 12px;">
+          Snap these at the wedding! Upload your photos at <a href="${baseUrl}/upload">${baseUrl}/upload</a> or scan the QR code at the venue.
+        </p>
+      </div>`;
+  } else {
+    variables.photo_challenges = "";
+    variables.photo_challenges_section = "";
+  }
 
   const html = renderTemplate(template.body_html, variables);
   const subject = renderTemplate(template.subject, variables);

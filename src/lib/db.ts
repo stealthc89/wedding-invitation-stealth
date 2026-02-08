@@ -68,6 +68,31 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_guests_token ON guests(token);
     CREATE INDEX IF NOT EXISTS idx_guests_rsvp ON guests(rsvp_status);
     CREATE INDEX IF NOT EXISTS idx_email_log_guest ON email_log(guest_id);
+
+    CREATE TABLE IF NOT EXISTS photo_challenges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      text TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS guest_challenges (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guest_id INTEGER NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
+      challenge_id INTEGER NOT NULL REFERENCES photo_challenges(id) ON DELETE CASCADE,
+      UNIQUE(guest_id, challenge_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS photo_uploads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guest_name TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      matched_guest_id INTEGER REFERENCES guests(id) ON DELETE SET NULL,
+      uploaded_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_photo_uploads_name ON photo_uploads(guest_name);
+    CREATE INDEX IF NOT EXISTS idx_guest_challenges_guest ON guest_challenges(guest_id);
   `);
 
   // Migration: add dietary_notes column if missing (for existing databases)
@@ -126,8 +151,46 @@ function initSchema(db: Database.Database) {
   <p>We look forward to celebrating with you!</p>
 </div>`
     );
+    insert.run(
+      "confirmation",
+      "RSVP Confirmation",
+      "Thanks for your RSVP!",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed</h1>
+  <p>Dear {{guest_name}},</p>
+  <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
+  {{photo_challenges_section}}
+  <p>See you soon!</p>
+  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email.</p>
+</div>`
+    );
+  }
+
+  // Migration: seed confirmation template if missing (for existing databases)
+  const hasConfirmation = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'confirmation'").get();
+  if (!hasConfirmation) {
+    db.prepare(
+      "INSERT INTO email_templates (slug, name, subject, body_html) VALUES (?, ?, ?, ?)"
+    ).run(
+      "confirmation",
+      "RSVP Confirmation",
+      "Thanks for your RSVP!",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed</h1>
+  <p>Dear {{guest_name}},</p>
+  <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
+  {{photo_challenges_section}}
+  <p>See you soon!</p>
+  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email.</p>
+</div>`
+    );
   }
 }
 
+const PHOTOS_DIR = path.join(DB_DIR, "photos");
+if (!fs.existsSync(PHOTOS_DIR)) {
+  fs.mkdirSync(PHOTOS_DIR, { recursive: true });
+}
+
 export default getDb;
-export { DB_PATH };
+export { DB_PATH, PHOTOS_DIR };

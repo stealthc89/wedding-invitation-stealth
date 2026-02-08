@@ -7,7 +7,9 @@ import Link from "next/link";
 const NAV_ITEMS = [
   { href: "/manage/dashboard", label: "Dashboard" },
   { href: "/manage/guests", label: "Guests" },
-  { href: "/manage/templates", label: "Email Templates" },
+  { href: "/manage/challenges", label: "Challenges" },
+  { href: "/manage/photos", label: "Photos" },
+  { href: "/manage/templates", label: "Templates" },
   { href: "/manage/media", label: "Media" },
 ];
 

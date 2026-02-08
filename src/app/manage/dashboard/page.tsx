@@ -11,6 +11,9 @@ interface Analytics {
   totalPlusOnes: number;
   totalHeadcount: number;
   mealBreakdown: { meal_preference: string; count: number }[];
+  totalPhotos: number;
+  photosByGuest: { guest_name: string; count: number }[];
+  photosOverTime: { date: string; count: number }[];
 }
 
 const MEAL_LABELS: Record<string, string> = {
@@ -76,6 +79,92 @@ export default function DashboardPage() {
               : "0%"
           }
         />
+      </div>
+
+      {/* Photo Stats */}
+      {analytics.totalPhotos > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Guest Photos</h2>
+            <a
+              href="/manage/photos"
+              className="text-sm text-blue-600 hover:underline"
+            >
+              View Gallery
+            </a>
+          </div>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div>
+              <p className="text-sm text-gray-500">Total Photos</p>
+              <p className="text-2xl font-bold text-gray-800">{analytics.totalPhotos}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Guests Contributing</p>
+              <p className="text-2xl font-bold text-gray-800">{analytics.photosByGuest.length}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Top Contributor</p>
+              <p className="text-lg font-bold text-gray-800 truncate">
+                {analytics.photosByGuest[0]?.guest_name || "—"}
+                {analytics.photosByGuest[0] && (
+                  <span className="text-sm text-gray-500 font-normal ml-1">
+                    ({analytics.photosByGuest[0].count})
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          {analytics.photosOverTime.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500 font-medium">Upload activity</p>
+              {analytics.photosOverTime.map((d) => (
+                <div key={d.date} className="flex items-center gap-2 text-xs">
+                  <span className="w-20 text-gray-500">{d.date}</span>
+                  <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-blue-500 h-full rounded-full"
+                      style={{
+                        width: `${Math.min(100, (d.count / Math.max(...analytics.photosOverTime.map((x) => x.count))) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="w-8 text-right text-gray-600">{d.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* QR Code */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">Photo Upload QR Code</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Print this QR code and display it at the venue. Guests scan it to upload photos.
+        </p>
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/api/admin/qr"
+            alt="Photo upload QR code"
+            className="w-32 h-32 border border-gray-200 rounded"
+          />
+          <div className="space-y-2">
+            <a
+              href="/api/admin/qr?format=png"
+              className="block px-4 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-700 text-center"
+            >
+              Download PNG (print-ready)
+            </a>
+            <a
+              href="/api/admin/qr"
+              target="_blank"
+              className="block px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 text-center"
+            >
+              Open SVG
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* Meal Breakdown */}
