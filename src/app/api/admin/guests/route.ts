@@ -4,6 +4,7 @@ import getDb from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
 import { parse } from "csv-parse/sync";
 import { stringify } from "csv-stringify/sync";
+import * as XLSX from "xlsx";
 
 // GET /api/admin/guests — list all guests
 export async function GET(req: NextRequest) {
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
         attending: g.attending === 1 ? "yes" : g.attending === 0 ? "no" : "",
         plus_one_attending: g.plus_one_attending ? "yes" : "no",
         meal_preference: g.meal_preference || "",
+        dietary_notes: g.dietary_notes || "",
         responded_at: g.responded_at || "",
       })),
       { header: true }
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
   const contentType = req.headers.get("content-type") || "";
   const db = getDb();
 
-  // CSV upload
+  // CSV or Excel upload
   if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -62,17 +64,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const text = await file.text();
     let records: Record<string, string>[];
+    const fileName = file.name?.toLowerCase() || "";
 
     try {
-      records = parse(text, {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true,
-      });
+      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+        // Excel file — parse with xlsx
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const workbook = XLSX.read(buffer, { type: "buffer" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        records = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: "" });
+      } else {
+        // CSV file
+        const text = await file.text();
+        records = parse(text, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+        });
+      }
     } catch {
-      return NextResponse.json({ error: "Invalid CSV format" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid file format. Upload a CSV or Excel (.xlsx) file." }, { status: 400 });
     }
 
     const insert = db.prepare(
@@ -124,7 +136,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, name, email, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference } =
+  const { id, name, email, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes } =
     await req.json();
   if (!id) {
     return NextResponse.json({ error: "Guest ID required" }, { status: 400 });
@@ -140,9 +152,10 @@ export async function PUT(req: NextRequest) {
       attending = COALESCE(?, attending),
       plus_one_attending = COALESCE(?, plus_one_attending),
       meal_preference = COALESCE(?, meal_preference),
+      dietary_notes = COALESCE(?, dietary_notes),
       updated_at = datetime('now')
     WHERE id = ?`
-  ).run(name, email, plus_one_allowed !== undefined ? (plus_one_allowed ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? (plus_one_attending ? 1 : 0) : null, meal_preference, id);
+  ).run(name, email, plus_one_allowed !== undefined ? (plus_one_allowed ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? (plus_one_attending ? 1 : 0) : null, meal_preference, dietary_notes, id);
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

@@ -37,6 +37,32 @@ A self-hosted, single-container wedding guest RSVP website with admin portal. Bu
 
 **Estimated monthly cost on GCP Cloud Run: $0–5** (within free tier for 200–250 guests)
 
+## Your Checklist
+
+Things only you can do — the app is ready, but needs your content and credentials.
+
+### Before First Deployment
+
+- [ ] **Add your photos** — Copy your 4 photos into `public/media/` as `venice.jpg`, `bali.jpg`, `neworleans.jpg`, `beach.jpg` (or rename them in `src/components/PhotoSlideshow.tsx`)
+- [ ] **Create Google OAuth credentials** — [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → OAuth 2.0 Client ID (Web app). Add redirect URI: `https://your-domain.com/api/auth/google/callback`. See [Authentication Setup](#authentication-setup) below
+- [ ] **Set up SMTP for emails** — Get an API key from [Resend](https://resend.com), [SendGrid](https://sendgrid.com), or similar. Set `SMTP_PASS` in your env. Emails are disabled until this is configured
+- [ ] **Fill in `.env` / `.env.local`** — Copy `.env.example` and fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `JWT_SECRET` (random string), and `BASE_URL`
+
+### After First Deployment
+
+- [ ] **Upload your guest list** — Sign in at `/manage/login`, go to Guests, upload your CSV or Excel file (see [Uploading Your Guest List](#uploading-your-guest-list))
+- [ ] **Customize email templates** — Go to Email Templates in the admin, update the invitation/reminder/itinerary HTML with your wedding details (date, venue, schedule, dress code)
+- [ ] **Provide wedding details** — The home page currently says "Chris & Candice" with placeholder text. Update `src/app/page.tsx` with your date, venue, and any other info
+- [ ] **Send test invitation** — Add yourself as a test guest, send an invitation email, click the link, and submit a test RSVP to verify the full flow
+- [ ] **Upload additional photos/videos** — Use the Media page in admin (`/manage/media`) to add more, or commit them to `public/media/`
+
+### Before Sending Real Invitations
+
+- [ ] **Set a custom domain** (optional) — Map your domain to Cloud Run. Update `BASE_URL` and OAuth redirect URIs
+- [ ] **Set the RSVP deadline** — In admin Settings, set the `rsvp_deadline` key (e.g., `2026-09-01`) to auto-close RSVPs after that date
+- [ ] **Review guest list** — Verify all names, emails, and plus-one permissions are correct
+- [ ] **Send invitations** — Use the Dashboard "Send Invitations" button or the Guests page email actions
+
 ## Quick Start (Local Development)
 
 ```bash
@@ -225,13 +251,14 @@ Jane Doe,jane@example.com,false
 
 Column names are flexible — `Name`, `Email`, `Plus One`, `plus_one` all work.
 
-### Option B: Excel to CSV
+### Option B: Excel upload via Admin Console
 
-Excel files (`.xlsx`) need to be saved as CSV first:
+Upload `.xlsx` files directly — no conversion needed:
 
-1. Open the spreadsheet in Excel or Google Sheets
-2. **File → Download as → CSV** (or Save As → CSV UTF-8)
-3. Upload the resulting `.csv` file through the admin console
+1. Sign in at `/manage/login`
+2. Go to **Guests** in the sidebar
+3. Click **Upload CSV / Excel** and select your `.xlsx` file
+4. The first sheet is read; column names are matched flexibly (Name, Email, Plus One, etc.)
 
 ### Option C: Add guests one by one
 

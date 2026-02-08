@@ -12,6 +12,7 @@ interface Guest {
   attending: number | null;
   plus_one_attending: number;
   meal_preference: string | null;
+  dietary_notes: string | null;
   responded_at: string | null;
 }
 
@@ -141,11 +142,11 @@ export default function GuestsPage() {
             Add Guest
           </button>
           <label className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 cursor-pointer">
-            Upload CSV
+            Upload CSV / Excel
             <input
               type="file"
               ref={fileRef}
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               onChange={uploadCSV}
               className="hidden"
             />
@@ -234,6 +235,7 @@ export default function GuestsPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600">Attending</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">+1</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Meal</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Notes</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
@@ -332,6 +334,15 @@ export default function GuestsPage() {
                       {g.meal_preference
                         ? MEAL_LABELS[g.meal_preference] || g.meal_preference
                         : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600 max-w-[200px]">
+                      {g.dietary_notes ? (
+                        <span className="truncate block" title={g.dietary_notes}>
+                          {g.dietary_notes}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="px-4 py-2 space-x-1">
                       <button

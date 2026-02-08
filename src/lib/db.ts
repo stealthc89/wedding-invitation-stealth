@@ -36,6 +36,7 @@ function initSchema(db: Database.Database) {
       attending INTEGER,
       plus_one_attending INTEGER DEFAULT 0,
       meal_preference TEXT,
+      dietary_notes TEXT,
       responded_at TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
@@ -68,6 +69,12 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_guests_rsvp ON guests(rsvp_status);
     CREATE INDEX IF NOT EXISTS idx_email_log_guest ON email_log(guest_id);
   `);
+
+  // Migration: add dietary_notes column if missing (for existing databases)
+  const cols = db.prepare("PRAGMA table_info(guests)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "dietary_notes")) {
+    db.exec("ALTER TABLE guests ADD COLUMN dietary_notes TEXT");
+  }
 
   // Seed default email templates if none exist
   const count = db.prepare("SELECT COUNT(*) as c FROM email_templates").get() as { c: number };

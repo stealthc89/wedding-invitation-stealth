@@ -12,6 +12,7 @@ interface GuestData {
   attending: number | null;
   plus_one_attending: number;
   meal_preference: string | null;
+  dietary_notes: string | null;
   responded_at: string | null;
 }
 
@@ -35,6 +36,8 @@ export default function RSVPPage() {
   const [attending, setAttending] = useState<boolean | null>(null);
   const [plusOneAttending, setPlusOneAttending] = useState(false);
   const [mealPreference, setMealPreference] = useState("no_preference");
+  const [dietaryNotes, setDietaryNotes] = useState("");
+  const [deadline, setDeadline] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/rsvp?token=${token}`)
@@ -44,11 +47,13 @@ export default function RSVPPage() {
       })
       .then((data) => {
         setGuest(data);
+        if (data.rsvp_deadline) setDeadline(data.rsvp_deadline);
         if (data.rsvp_status === "responded") {
           setSubmitted(true);
           setAttending(data.attending === 1);
           setPlusOneAttending(data.plus_one_attending === 1);
           setMealPreference(data.meal_preference || "no_preference");
+          setDietaryNotes(data.dietary_notes || "");
         }
       })
       .catch((err) => setError(err.message))
@@ -69,6 +74,7 @@ export default function RSVPPage() {
           attending,
           plus_one_attending: plusOneAttending,
           meal_preference: attending ? mealPreference : null,
+          dietary_notes: attending ? dietaryNotes : null,
         }),
       });
 
@@ -121,6 +127,20 @@ export default function RSVPPage() {
           <p className="text-xl text-white/90">{guest.name}</p>
         </div>
 
+        {/* Deadline notice */}
+        {deadline && !submitted && (
+          <p className="text-center text-white/70 text-sm mb-4">
+            Please respond by{" "}
+            <strong className="text-white">
+              {new Date(deadline + "T00:00:00").toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </strong>
+          </p>
+        )}
+
         {submitted ? (
           <div className="glass-card rounded-2xl p-8 text-center">
             <div className="text-4xl mb-4">{attending ? "🎉" : "💌"}</div>
@@ -141,6 +161,11 @@ export default function RSVPPage() {
                 <p>
                   <strong>Meal preference:</strong>{" "}
                   {MEAL_OPTIONS.find((m) => m.value === mealPreference)?.label}
+                </p>
+              )}
+              {attending && dietaryNotes && (
+                <p>
+                  <strong>Dietary notes:</strong> {dietaryNotes}
                 </p>
               )}
             </div>
@@ -246,6 +271,26 @@ export default function RSVPPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Dietary Notes */}
+            {attending && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                  Dietary restrictions or special requests
+                </label>
+                <p className="text-xs text-[var(--color-muted)] mb-3">
+                  Allergies, intolerances, or anything we should know.
+                </p>
+                <textarea
+                  value={dietaryNotes}
+                  onChange={(e) => setDietaryNotes(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="e.g., nut allergy, gluten-free, halal"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                />
               </div>
             )}
 

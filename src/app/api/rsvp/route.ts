@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
   const guest = db
     .prepare(
-      "SELECT id, name, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, responded_at FROM guests WHERE token = ?"
+      "SELECT id, name, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
     )
     .get(token);
 
@@ -19,13 +19,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid invitation link" }, { status: 404 });
   }
 
-  return NextResponse.json(guest);
+  // Include RSVP deadline if set
+  const deadlineSetting = db.prepare("SELECT value FROM settings WHERE key = 'rsvp_deadline'").get() as { value: string } | undefined;
+
+  return NextResponse.json({ ...(guest as Record<string, unknown>), rsvp_deadline: deadlineSetting?.value || null });
 }
 
 // POST /api/rsvp — submit RSVP
 export async function POST(req: NextRequest) {
   try {
-    const { token, attending, plus_one_attending, meal_preference } = await req.json();
+    const { token, attending, plus_one_attending, meal_preference, dietary_notes } = await req.json();
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
@@ -50,6 +53,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check RSVP deadline
+    const deadlineSetting = db.prepare("SELECT value FROM settings WHERE key = 'rsvp_deadline'").get() as { value: string } | undefined;
+    if (deadlineSetting?.value) {
+      const deadline = new Date(deadlineSetting.value + "T23:59:59");
+      if (!isNaN(deadline.getTime()) && new Date() > deadline) {
+        return NextResponse.json(
+          { error: "The RSVP deadline has passed. Please contact the bride or groom directly." },
+          { status: 410 }
+        );
+      }
+    }
+
     const validMeals = ["vegetarian", "vegan", "pescatarian", "no_preference"];
     const meal = attending && meal_preference && validMeals.includes(meal_preference)
       ? meal_preference
@@ -58,6 +73,7 @@ export async function POST(req: NextRequest) {
         : null;
 
     const plusOne = attending && guest.plus_one_allowed && plus_one_attending ? 1 : 0;
+    const notes = attending && dietary_notes ? String(dietary_notes).slice(0, 500) : null;
 
     db.prepare(
       `UPDATE guests SET
@@ -65,10 +81,11 @@ export async function POST(req: NextRequest) {
         attending = ?,
         plus_one_attending = ?,
         meal_preference = ?,
+        dietary_notes = ?,
         responded_at = datetime('now'),
         updated_at = datetime('now')
       WHERE token = ?`
-    ).run(attending ? 1 : 0, plusOne, meal, token);
+    ).run(attending ? 1 : 0, plusOne, meal, notes, token);
 
     return NextResponse.json({ success: true, message: "RSVP submitted successfully" });
   } catch (error) {

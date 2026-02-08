@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 
-// Photos in public/media/ — add more filenames here to include them
-const DEFAULT_PHOTOS = [
+// Fallback photos if API returns empty and no photos prop is given
+const FALLBACK_PHOTOS = [
   "/media/venice.jpg",
   "/media/bali.jpg",
   "/media/neworleans.jpg",
@@ -27,15 +27,36 @@ interface PhotoSlideshowProps {
 }
 
 export default function PhotoSlideshow({
-  photos = DEFAULT_PHOTOS,
+  photos: photosProp,
   interval = 7000,
   overlay = "dark",
   children,
 }: PhotoSlideshowProps) {
+  const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState<Set<number>>(new Set([0]));
 
+  // Fetch slideshow photos dynamically if no explicit photos prop
   useEffect(() => {
+    if (photosProp) return; // Skip if caller provided photos
+
+    fetch("/api/slideshow")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDynamicPhotos(data);
+        } else {
+          setDynamicPhotos(FALLBACK_PHOTOS);
+        }
+      })
+      .catch(() => setDynamicPhotos(FALLBACK_PHOTOS));
+  }, [photosProp]);
+
+  const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
+
+  useEffect(() => {
+    if (photos.length === 0) return;
+
     // Preload next image
     const next = (current + 1) % photos.length;
     if (!loaded.has(next)) {
