@@ -91,7 +91,10 @@ export async function POST(req: NextRequest) {
         ? "no_preference"
         : null;
 
-    const finalPlusOneCount = attending && guest.plus_one_allowed ? plusOneCount : 0;
+    // Cap plus-one count to not exceed the guest's allowed limit
+    const finalPlusOneCount = attending && guest.plus_one_allowed
+      ? Math.min(plusOneCount, Number(guest.plus_one_allowed))
+      : 0;
     const finalPlusOneNames = attending && finalPlusOneCount > 0 && plus_one_names ? plus_one_names : null;
     const notes = attending && dietary_notes ? String(dietary_notes).slice(0, 500) : null;
 
