@@ -102,10 +102,13 @@ export default function PhotoSlideshow({
     // Start with first 6 images once they're loaded (allows transition from initial single photo)
     if (loadedPhotos.length >= INITIAL_BATCH_SIZE && activePhotos.length <= 1) {
       setActivePhotos(loadedPhotos.slice(0, INITIAL_BATCH_SIZE));
+      setCurrent(0); // Reset to first photo when starting slideshow
     }
     // Add newly loaded images to rotation (only after we have at least 6)
     else if (activePhotos.length >= INITIAL_BATCH_SIZE && loadedPhotos.length > activePhotos.length) {
       setActivePhotos(loadedPhotos);
+      // Keep current index valid for new array length
+      setCurrent((prev) => prev % loadedPhotos.length);
     }
   }, [loaded.size, photos.length, activePhotos.length, photos]);
 

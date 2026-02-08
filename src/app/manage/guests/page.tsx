@@ -47,6 +47,8 @@ export default function GuestsPage() {
   const [copyStatus, setCopyStatus] = useState<{[key: number]: string}>({});
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
   function fetchGuests() {
     fetch("/api/admin/guests")
       .then((res) => res.json())
@@ -175,8 +177,6 @@ export default function GuestsPage() {
       return g.attending === 0 && g.rsvp_status === "responded";
     return true;
   });
-
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   if (loading) return <p className="text-gray-500">Loading guests...</p>;
 
