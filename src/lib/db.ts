@@ -68,6 +68,7 @@ function initSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_guests_token ON guests(token);
     CREATE INDEX IF NOT EXISTS idx_guests_rsvp ON guests(rsvp_status);
     CREATE INDEX IF NOT EXISTS idx_email_log_guest ON email_log(guest_id);
+    CREATE INDEX IF NOT EXISTS idx_email_log_template ON email_log(template_slug);
 
     CREATE TABLE IF NOT EXISTS photo_challenges (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

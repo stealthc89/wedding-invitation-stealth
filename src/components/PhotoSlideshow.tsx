@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Fallback photos if API returns empty and no photos prop is given
 // High-quality images representing the couple's romantic journey
@@ -41,6 +41,7 @@ export default function PhotoSlideshow({
   const [loaded, setLoaded] = useState<Set<number>>(new Set());
   const [activePhotos, setActivePhotos] = useState<string[]>([]);
   const INITIAL_BATCH_SIZE = 6; // Start slideshow after first 6 images
+  const imageObjectsRef = useRef<Map<number, HTMLImageElement>>(new Map());
 
   // Fetch slideshow photos dynamically if no explicit photos prop
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function PhotoSlideshow({
     if (photos.length === 0) return;
 
     photos.forEach((photo, index) => {
-      if (!loaded.has(index)) {
+      if (!loaded.has(index) && !imageObjectsRef.current.has(index)) {
         const img = new Image();
         img.src = photo;
         // Eagerly load first batch, lazy load the rest
@@ -93,8 +94,20 @@ export default function PhotoSlideshow({
             return newSet;
           });
         };
+        // Store reference for cleanup
+        imageObjectsRef.current.set(index, img);
       }
     });
+
+    // Cleanup: remove references to images that are no longer needed
+    return () => {
+      imageObjectsRef.current.forEach((img, index) => {
+        img.onload = null;
+        img.onerror = null;
+        img.src = "";
+      });
+      imageObjectsRef.current.clear();
+    };
   }, [photos]);
 
   // Update active photos as images load (phased approach)

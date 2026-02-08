@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createToken, isAdminEmail, COOKIE_NAME } from "@/lib/auth";
+import { createToken, isAdminEmail, COOKIE_NAME, validateOAuthState } from "@/lib/auth";
 
 // GET /api/auth/google/callback — handle Google OAuth callback
 export async function GET(req: NextRequest) {
@@ -8,9 +8,14 @@ export async function GET(req: NextRequest) {
   const storedState = req.cookies.get("oauth_state")?.value;
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 
-  // Verify state parameter to prevent CSRF
+  // Verify state parameter to prevent CSRF and replay attacks
   if (!code || !state || state !== storedState) {
     return NextResponse.redirect(`${baseUrl}/manage/login?error=invalid_state`);
+  }
+
+  // Validate state hasn't expired (30 minutes)
+  if (!validateOAuthState(state, 30 * 60 * 1000)) {
+    return NextResponse.redirect(`${baseUrl}/manage/login?error=state_expired`);
   }
 
   // Exchange authorization code for tokens

@@ -43,7 +43,20 @@ export async function requireAdmin(): Promise<{ email: string }> {
 }
 
 export function generateOAuthState(): string {
-  return crypto.randomBytes(32).toString("hex");
+  const timestamp = Date.now();
+  const randomValue = crypto.randomBytes(32).toString("hex");
+  return `${timestamp}:${randomValue}`;
+}
+
+export function validateOAuthState(state: string, maxAgeMs: number = 30 * 60 * 1000): boolean {
+  try {
+    const [timestampStr, _randomValue] = state.split(":");
+    const timestamp = parseInt(timestampStr, 10);
+    const age = Date.now() - timestamp;
+    return age >= 0 && age <= maxAgeMs;
+  } catch {
+    return false;
+  }
 }
 
 export function getGoogleAuthUrl(state: string): string {

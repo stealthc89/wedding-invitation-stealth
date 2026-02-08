@@ -40,13 +40,31 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS
+ * Returns empty string for null/undefined values
+ */
+function escapeHtml(unsafe: string | null | undefined): string {
+  if (unsafe === null || unsafe === undefined) return "";
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export function renderTemplate(
   templateHtml: string,
   variables: Record<string, string>
 ): string {
   let rendered = templateHtml;
   for (const [key, value] of Object.entries(variables)) {
-    rendered = rendered.replace(new RegExp(`{{${key}}}`, "g"), value);
+    // Escape HTML in variables unless they are explicitly marked as safe HTML sections
+    const escapedValue = key.endsWith("_section") || key.endsWith("_html")
+      ? value
+      : escapeHtml(value);
+    rendered = rendered.replace(new RegExp(`{{${key}}}`, "g"), escapedValue);
   }
   return rendered;
 }
@@ -61,12 +79,12 @@ export async function sendTemplateEmail(
   const guest = db
     .prepare("SELECT * FROM guests WHERE id = ?")
     .get(guestId) as Record<string, string> | undefined;
-  if (!guest || !guest.email) return false;
+  if (!guest || !guest.email || !guest.name || !guest.token) return false;
 
   const template = db
     .prepare("SELECT * FROM email_templates WHERE slug = ?")
     .get(templateSlug) as Record<string, string> | undefined;
-  if (!template) return false;
+  if (!template || !template.body_html || !template.subject) return false;
 
   const baseUrl = process.env.BASE_URL || "http://localhost:3000";
   const variables: Record<string, string> = {
@@ -85,14 +103,14 @@ export async function sendTemplateEmail(
 
   if (challenges.length > 0) {
     variables.photo_challenges = challenges
-      .map((c) => `<li style="margin-bottom: 6px;">📸 ${c.text}</li>`)
+      .map((c) => `<li style="margin-bottom: 6px;">📸 ${escapeHtml(c.text)}</li>`)
       .join("");
     variables.photo_challenges_section = `
       <div style="margin: 24px 0; padding: 20px; background: #f8f8f8; border-radius: 8px;">
         <p style="font-weight: bold; margin-bottom: 12px;">Your Photo Challenges</p>
         <ul style="list-style: none; padding: 0; margin: 0;">${variables.photo_challenges}</ul>
         <p style="font-size: 13px; color: #888; margin-top: 12px;">
-          Snap these at the wedding! Upload your photos at <a href="${baseUrl}/upload">${baseUrl}/upload</a> or scan the QR code at the venue.
+          Snap these at the wedding! Upload your photos at <a href="${escapeHtml(baseUrl)}/upload">${escapeHtml(baseUrl)}/upload</a> or scan the QR code at the venue.
         </p>
       </div>`;
   } else {

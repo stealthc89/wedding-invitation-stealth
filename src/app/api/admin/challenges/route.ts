@@ -31,10 +31,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Challenge text required" }, { status: 400 });
   }
 
+  const trimmedText = text.trim();
+  if (trimmedText.length > 200) {
+    return NextResponse.json(
+      { error: "Challenge text must be 200 characters or less" },
+      { status: 400 }
+    );
+  }
+
   const db = getDb();
   const result = db
     .prepare("INSERT INTO photo_challenges (text) VALUES (?)")
-    .run(text.trim());
+    .run(trimmedText);
 
   const challenge = db
     .prepare("SELECT * FROM photo_challenges WHERE id = ?")
@@ -56,8 +64,16 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "ID and text required" }, { status: 400 });
   }
 
+  const trimmedText = text.trim();
+  if (trimmedText.length > 200) {
+    return NextResponse.json(
+      { error: "Challenge text must be 200 characters or less" },
+      { status: 400 }
+    );
+  }
+
   const db = getDb();
-  db.prepare("UPDATE photo_challenges SET text = ? WHERE id = ?").run(text.trim(), id);
+  db.prepare("UPDATE photo_challenges SET text = ? WHERE id = ?").run(trimmedText, id);
 
   const challenge = db
     .prepare("SELECT * FROM photo_challenges WHERE id = ?")

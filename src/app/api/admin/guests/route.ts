@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { parse } from "csv-parse/sync";
 import { stringify } from "csv-stringify/sync";
 import * as XLSX from "xlsx";
+import { logAdminAction } from "@/lib/audit-log";
 
 // GET /api/admin/guests — list all guests
 export async function GET(req: NextRequest) {
@@ -88,16 +89,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid file format. Upload a CSV or Excel (.xlsx) file." }, { status: 400 });
     }
 
+    // Simple email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     const insert = db.prepare(
       "INSERT INTO guests (token, name, email, plus_one_allowed) VALUES (?, ?, ?, ?)"
     );
     const insertMany = db.transaction((rows: Record<string, string>[]) => {
       let count = 0;
+      let skipped = 0;
       for (const row of rows) {
         const name = row.name || row.Name;
-        const email = row.email || row.Email || "";
+        const email = (row.email || row.Email || "").trim();
         const plusOneRaw = row.plus_one_allowed || row["Plus One"] || row.plus_one || "0";
         if (!name) continue;
+
+        // Validate email: allow empty, but validate if provided
+        if (email && !emailRegex.test(email)) {
+          console.warn(`[CSV Import] Skipping row with invalid email: ${email} (guest: ${name})`);
+          skipped++;
+          continue;
+        }
 
         // Parse both legacy boolean strings ("yes"/"true") and numeric values (0-10)
         const plusOneLower = String(plusOneRaw).toLowerCase().trim();
@@ -108,19 +120,29 @@ export async function POST(req: NextRequest) {
           plusOneCount = Math.max(0, Math.min(parseInt(plusOneRaw) || 0, 10));
         }
 
-        insert.run(
-          uuidv4(),
-          name.trim(),
-          email.trim(),
-          plusOneCount
-        );
-        count++;
+        try {
+          insert.run(
+            uuidv4(),
+            name.trim(),
+            email,
+            plusOneCount
+          );
+          count++;
+        } catch (error) {
+          // Skip rows that violate constraints (e.g., duplicate emails)
+          console.warn(`[CSV Import] Skipped row due to constraint violation: ${name} (${email})`);
+          skipped++;
+        }
       }
-      return count;
+      return { count, skipped };
     });
 
-    const count = insertMany(records);
-    return NextResponse.json({ success: true, imported: count });
+    const result = insertMany(records);
+    return NextResponse.json({
+      success: true,
+      imported: result.count,
+      ...(result.skipped > 0 && { skipped: result.skipped, message: `${result.skipped} row(s) skipped due to invalid email addresses` })
+    });
   }
 
   // Single guest add
@@ -129,13 +151,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const token = uuidv4();
-  db.prepare(
-    "INSERT INTO guests (token, name, email, plus_one_allowed, is_under_10) VALUES (?, ?, ?, ?, ?)"
-  ).run(token, name, email || "", plus_one_allowed || 0, is_under_10 ? 1 : 0);
+  // Validate email if provided
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const trimmedEmail = (email || "").trim();
+  if (trimmedEmail && !emailRegex.test(trimmedEmail)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
 
-  const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token);
-  return NextResponse.json(guest, { status: 201 });
+  const token = uuidv4();
+
+  try {
+    db.prepare(
+      "INSERT INTO guests (token, name, email, plus_one_allowed, is_under_10) VALUES (?, ?, ?, ?, ?)"
+    ).run(token, name, trimmedEmail, plus_one_allowed || 0, is_under_10 ? 1 : 0);
+
+    const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token);
+    return NextResponse.json(guest, { status: 201 });
+  } catch (error) {
+    // Handle SQLite constraint violations
+    if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
+      return NextResponse.json(
+        { error: "A guest with this email already exists" },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 }
 
 // PUT /api/admin/guests — update guest
@@ -150,6 +191,14 @@ export async function PUT(req: NextRequest) {
     await req.json();
   if (!id) {
     return NextResponse.json({ error: "Guest ID required" }, { status: 400 });
+  }
+
+  // Validate email if provided
+  if (email !== undefined && email !== null && email !== "") {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
   }
 
   const db = getDb();
@@ -180,8 +229,9 @@ export async function PUT(req: NextRequest) {
 
 // DELETE /api/admin/guests — remove guest
 export async function DELETE(req: NextRequest) {
+  let session;
   try {
-    await requireAdmin();
+    session = await requireAdmin();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -192,6 +242,32 @@ export async function DELETE(req: NextRequest) {
   }
 
   const db = getDb();
-  db.prepare("DELETE FROM guests WHERE id = ?").run(id);
-  return NextResponse.json({ success: true });
+
+  // Get guest info before deleting for audit log
+  const guest = db.prepare("SELECT name, email FROM guests WHERE id = ?").get(id) as { name: string; email: string } | undefined;
+
+  try {
+    db.prepare("DELETE FROM guests WHERE id = ?").run(id);
+
+    logAdminAction({
+      action: "delete_guest",
+      email: session.email,
+      resource: "guest",
+      resourceId: id,
+      details: { guestName: guest?.name, guestEmail: guest?.email },
+      success: true,
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logAdminAction({
+      action: "delete_guest",
+      email: session.email,
+      resource: "guest",
+      resourceId: id,
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    throw error;
+  }
 }

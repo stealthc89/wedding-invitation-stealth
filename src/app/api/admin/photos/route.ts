@@ -27,17 +27,22 @@ export async function GET(req: NextRequest) {
 
   // Single file download
   if (download) {
-    const filePath = path.join(PHOTOS_DIR, download);
-    if (
-      !download.includes("..") &&
-      !download.includes("/") &&
-      fs.existsSync(filePath)
-    ) {
+    // Prevent path traversal by normalizing and validating the resolved path
+    const normalizedFilename = path.normalize(download).replace(/^(\.\.(\/|\\|$))+/, '');
+    const filePath = path.resolve(PHOTOS_DIR, normalizedFilename);
+    const photosDir = path.resolve(PHOTOS_DIR);
+
+    // Ensure the resolved path is within PHOTOS_DIR
+    if (!filePath.startsWith(photosDir + path.sep) && filePath !== photosDir) {
+      return NextResponse.json({ error: "Invalid file path" }, { status: 400 });
+    }
+
+    if (fs.existsSync(filePath)) {
       const buffer = fs.readFileSync(filePath);
       return new NextResponse(buffer, {
         headers: {
           "Content-Type": "application/octet-stream",
-          "Content-Disposition": `attachment; filename="${download}"`,
+          "Content-Disposition": `attachment; filename="${path.basename(filePath)}"`,
         },
       });
     }
@@ -58,7 +63,13 @@ export async function GET(req: NextRequest) {
     let offset = 0;
 
     for (const photo of photos) {
-      const filePath = path.join(PHOTOS_DIR, photo.filename);
+      // Validate path even though filename comes from database (defense in depth)
+      const normalizedFilename = path.normalize(photo.filename).replace(/^(\.\.(\/|\\|$))+/, '');
+      const filePath = path.resolve(PHOTOS_DIR, normalizedFilename);
+      const photosDir = path.resolve(PHOTOS_DIR);
+
+      // Ensure the resolved path is within PHOTOS_DIR
+      if (!filePath.startsWith(photosDir + path.sep) && filePath !== photosDir) continue;
       if (!fs.existsSync(filePath)) continue;
 
       const fileData = fs.readFileSync(filePath);
@@ -171,9 +182,16 @@ export async function DELETE(req: NextRequest) {
     .get(id) as { filename: string } | undefined;
 
   if (photo) {
-    const filePath = path.join(PHOTOS_DIR, photo.filename);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Validate path even though filename comes from database (defense in depth)
+    const normalizedFilename = path.normalize(photo.filename).replace(/^(\.\.(\/|\\|$))+/, '');
+    const filePath = path.resolve(PHOTOS_DIR, normalizedFilename);
+    const photosDir = path.resolve(PHOTOS_DIR);
+
+    // Ensure the resolved path is within PHOTOS_DIR
+    if (filePath.startsWith(photosDir + path.sep) || filePath === photosDir) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
     db.prepare("DELETE FROM photo_uploads WHERE id = ?").run(id);
   }

@@ -250,9 +250,9 @@ export default function GuestsPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 rounded p-3 font-mono text-sm whitespace-pre-wrap text-gray-700">
+          <pre className="bg-gray-50 rounded p-3 font-mono text-sm whitespace-pre-wrap text-gray-700 overflow-x-auto">
             {inviteTemplate}
-          </div>
+          </pre>
         )}
       </div>
 

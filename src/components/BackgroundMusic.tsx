@@ -44,10 +44,6 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
         try {
           await audio.play();
           setIsPlaying(true);
-          // Remove listeners after successful play
-          document.removeEventListener("click", startOnInteraction);
-          document.removeEventListener("touchstart", startOnInteraction);
-          document.removeEventListener("keydown", startOnInteraction);
         } catch (error) {
           console.log("Failed to start audio on interaction");
         }
@@ -55,16 +51,18 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
     };
 
     // Listen for user interaction to start audio
+    // Using { once: true } ensures listeners are automatically removed after firing
     document.addEventListener("click", startOnInteraction, { once: true });
     document.addEventListener("touchstart", startOnInteraction, { once: true });
     document.addEventListener("keydown", startOnInteraction, { once: true });
 
+    // Cleanup: remove listeners if component unmounts before they fire
     return () => {
       document.removeEventListener("click", startOnInteraction);
       document.removeEventListener("touchstart", startOnInteraction);
       document.removeEventListener("keydown", startOnInteraction);
     };
-  }, [volume, startTime]);
+  }, [volume, startTime, isPlaying]);
 
   const toggleMute = async () => {
     const audio = audioRef.current;
