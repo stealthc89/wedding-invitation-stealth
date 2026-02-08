@@ -99,12 +99,12 @@ export default function PhotoSlideshow({
 
     const loadedPhotos = photos.filter((_, index) => loaded.has(index));
 
-    // Start with first 6 images once they're loaded
-    if (loadedPhotos.length >= INITIAL_BATCH_SIZE && activePhotos.length === 0) {
+    // Start with first 6 images once they're loaded (allows transition from initial single photo)
+    if (loadedPhotos.length >= INITIAL_BATCH_SIZE && activePhotos.length <= 1) {
       setActivePhotos(loadedPhotos.slice(0, INITIAL_BATCH_SIZE));
     }
-    // Add newly loaded images to rotation
-    else if (activePhotos.length > 0 && loadedPhotos.length > activePhotos.length) {
+    // Add newly loaded images to rotation (only after we have at least 6)
+    else if (activePhotos.length >= INITIAL_BATCH_SIZE && loadedPhotos.length > activePhotos.length) {
       setActivePhotos(loadedPhotos);
     }
   }, [loaded.size, photos.length, activePhotos.length, photos]);
