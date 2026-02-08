@@ -40,12 +40,16 @@ export async function POST(
         plus_one_attending = 0,
         plus_one_names = NULL,
         plus_one_meal_preference = NULL,
+        plus_one_dietary_notes = NULL,
         meal_preference = NULL,
         dietary_notes = NULL,
         responded_at = NULL,
         updated_at = datetime('now')
       WHERE id = ?`
     ).run(id);
+
+    // Delete companion guest records (plus-ones) created during RSVP
+    db.prepare("DELETE FROM guests WHERE is_plus_one = 1 AND linked_to_guest_id = ?").run(id);
 
     // Clear any photo challenges assigned to this guest
     db.prepare("DELETE FROM guest_challenges WHERE guest_id = ?").run(id);
