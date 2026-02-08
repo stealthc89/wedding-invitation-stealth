@@ -74,6 +74,8 @@ resource "google_storage_bucket" "data" {
   location      = var.region
   force_destroy = false
 
+  uniform_bucket_level_access = true
+
   versioning {
     enabled = true
   }
@@ -93,6 +95,8 @@ resource "google_storage_bucket" "backups" {
   name          = "${var.project_id}-wedding-backups"
   location      = var.region
   force_destroy = false
+
+  uniform_bucket_level_access = true
 
   lifecycle_rule {
     condition {
@@ -211,13 +215,16 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
 }
 
 output "service_url" {
-  value = google_cloud_run_v2_service.wedding.uri
+  description = "Cloud Run service URL"
+  value       = google_cloud_run_v2_service.wedding.uri
 }
 
 output "data_bucket" {
-  value = google_storage_bucket.data.name
+  description = "GCS bucket for SQLite database"
+  value       = google_storage_bucket.data.name
 }
 
 output "backup_bucket" {
-  value = google_storage_bucket.backups.name
+  description = "GCS bucket for database backups"
+  value       = google_storage_bucket.backups.name
 }

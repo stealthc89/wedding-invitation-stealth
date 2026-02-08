@@ -6,47 +6,52 @@ import getDb from "@/lib/db";
 const MEDIA_DIR = path.join(process.cwd(), "public", "media");
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
-// Curated slideshow order - tells a story from romantic to adventurous
+// Curated slideshow order - tells a romantic love story journey
 const CURATED_ORDER = [
-  // Venice - romantic gondola rides
-  "/media/venice-gondola-ride.jpeg",
-  "/media/venice-gondola-canal.jpeg",
-  "/media/venice-basilica-kiss.jpeg",
-  "/media/venice-dock-sunset.jpeg",
-  "/media/venice-gondola-rialto.jpeg",
+  // Start with romantic Venice - elegant, timeless love
+  "/media/venice-basilica-couple-kiss.jpeg",
+  "/media/venice-dock-couple-portrait.jpeg",
+  "/media/venice-gondola-romantic-moment.jpeg",
+  "/media/venice-gondola-narrow-canal.jpeg",
+  "/media/venice-gondola-rialto-bridge.jpeg",
 
-  // Singapore - city lights and adventures
-  "/media/singapore-marina-bay-sands.jpeg",
-  "/media/singapore-skyline-night.jpeg",
-  "/media/singapore-skyline-luge.jpeg",
+  // City lights and celebration - Singapore nights
+  "/media/singapore-marina-bay-sands-professional.jpeg",
+  "/media/istanbul-bridge-night.jpeg",
+  "/media/singapore-skyline-upside-down.jpeg",
 
-  // Bali - tropical paradise
-  "/media/bali-temple-gates.jpeg",
-  "/media/bali-heart-swing.jpeg",
-  "/media/bali-waterfall.jpeg",
+  // Tropical paradise and adventure - Bali
+  "/media/bali-temple-jumping-reflection.jpeg",
+  "/media/bali-heart-swing-frame.jpeg",
+  "/media/waterfall-tropical-jungle.jpeg",
 
-  // Thailand - beach adventures
-  "/media/thailand-beach-cave.jpeg",
-  "/media/thailand-kayak-group.jpeg",
+  // Beach adventures - water and sun
+  "/media/kayaking-couple-selfie.jpeg",
+  "/media/beach-cliffs-upside-down.jpeg",
+  "/media/jet-ski-couple-ocean.jpeg",
+  "/media/jet-ski-waving-solo.jpeg",
 
-  // Egypt - ancient wonders
-  "/media/egypt-pyramids-camels.jpeg",
-  "/media/egypt-desert-mountains.jpeg",
+  // Underwater exploration - diving deep together
+  "/media/scuba-diving-underwater-heart.jpeg",
 
-  // Winter adventures
-  "/media/snow-cuddle-sunset.jpeg",
-  "/media/skiing-mountains.jpeg",
-  "/media/ski-resort-ipsa-sign.jpeg",
-  "/media/snow-cuddle-evening.jpeg",
+  // Ancient wonders - Egypt
+  "/media/egypt-pyramids-camels-couple.jpeg",
+  "/media/desert-sand-dunes-upside-down.jpeg",
 
-  // Water sports action
-  "/media/jet-ski-action.jpeg",
-  "/media/jet-ski-standing.jpeg",
+  // Winter romance - snow and mountains
+  "/media/snow-mountains-sunset-cuddle.jpeg",
+  "/media/skiing-couple-mountain-slopes.jpeg",
+  "/media/ski-resort-ipsa-sign-couple.jpeg",
+  "/media/snow-mountains-golden-hour.jpeg",
 
-  // Fun activities
-  "/media/go-karts-track.jpeg",
-  "/media/cote-purple-tunnel.jpeg",
-  "/media/new-orleans-bourbon-street.jpeg",
+  // Fun adventures together
+  "/media/boxing-ring-couple.jpeg",
+  "/media/bar-upside-down-selfie.jpeg",
+
+  // Grand finale - elegant and artistic
+  "/media/palace-grand-staircase-upside-down.jpeg",
+  "/media/palace-ornate-ceiling-upside-down.jpeg",
+  "/media/purple-tunnel-solo.jpeg",
 ];
 
 // GET /api/slideshow — public endpoint, returns photo paths for the slideshow

@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 
 // Fallback photos if API returns empty and no photos prop is given
+// High-quality images representing the couple's romantic journey
 const FALLBACK_PHOTOS = [
-  "/media/venice-gondola-ride.jpeg",
-  "/media/singapore-marina-bay-sands.jpeg",
-  "/media/bali-temple-gates.jpeg",
-  "/media/egypt-pyramids-camels.jpeg",
+  "/media/venice-basilica-couple-kiss.jpeg",
+  "/media/singapore-marina-bay-sands-professional.jpeg",
+  "/media/bali-temple-jumping-reflection.jpeg",
+  "/media/egypt-pyramids-camels-couple.jpeg",
+  "/media/snow-mountains-sunset-cuddle.jpeg",
+  "/media/scuba-diving-underwater-heart.jpeg",
 ];
 
 // Each slide gets a different zoom origin for variety
@@ -34,7 +37,7 @@ export default function PhotoSlideshow({
 }: PhotoSlideshowProps) {
   const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
   const [current, setCurrent] = useState(0);
-  const [loaded, setLoaded] = useState<Set<number>>(new Set([0]));
+  const [loaded, setLoaded] = useState<Set<number>>(new Set());
 
   // Fetch slideshow photos dynamically if no explicit photos prop
   useEffect(() => {
@@ -54,23 +57,37 @@ export default function PhotoSlideshow({
 
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
 
+  // Preload all images for smoother transitions
   useEffect(() => {
     if (photos.length === 0) return;
 
-    // Preload next image
-    const next = (current + 1) % photos.length;
-    if (!loaded.has(next)) {
-      const img = new Image();
-      img.src = photos[next];
-      img.onload = () => setLoaded((prev) => new Set(prev).add(next));
-    }
+    photos.forEach((photo, index) => {
+      if (!loaded.has(index)) {
+        const img = new Image();
+        img.src = photo;
+        // Add quality hints for better rendering
+        img.loading = "eager";
+        img.decoding = "async";
+        img.onload = () => {
+          setLoaded((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(index);
+            return newSet;
+          });
+        };
+      }
+    });
+  }, [photos, loaded]);
+
+  useEffect(() => {
+    if (photos.length === 0) return;
 
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % photos.length);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [current, photos, interval, loaded]);
+  }, [current, photos, interval]);
 
   const overlayClass =
     overlay === "dark"

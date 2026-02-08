@@ -6,12 +6,12 @@ echo "=============================================="
 echo ""
 
 PROJECT_ID="project-ef128af4-2ca3-4e17-837"
-REGION="europe-west2"
+REGION="europe-west1"
 IMAGE="gcr.io/$PROJECT_ID/wedding-rsvp:latest"
 
 echo "📋 Configuration:"
 echo "   Project: $PROJECT_ID"
-echo "   Region: $REGION (London)"
+echo "   Region: $REGION (Belgium - supports Domain Mappings)"
 echo "   Image: $IMAGE"
 echo ""
 
@@ -84,23 +84,117 @@ echo "   2. Add to 'Authorized redirect URIs': https://celebratingcc.com/api/aut
 echo "   3. Click 'Save'"
 echo ""
 
-# Step 9: DNS configuration
+# Step 9: Domain Mapping (idempotent)
 echo ""
-echo "9️⃣  DNS Configuration..."
+echo "9️⃣  Configuring domain mapping..."
+DOMAIN="celebratingcc.com"
+DOMAIN_EXISTS=$(gcloud beta run domain-mappings describe $DOMAIN --region=$REGION --project=$PROJECT_ID 2>/dev/null && echo "yes" || echo "no")
+
+if [ "$DOMAIN_EXISTS" = "no" ]; then
+  echo "   Creating domain mapping for $DOMAIN..."
+  gcloud beta run domain-mappings create \
+    --service wedding-rsvp \
+    --domain $DOMAIN \
+    --region=$REGION \
+    --project=$PROJECT_ID && {
+    echo "   ✅ Domain mapping created!"
+  } || {
+    echo "   ⚠️  Domain mapping creation failed."
+    echo "      Visit: https://console.cloud.google.com/run/domains"
+    exit 1
+  }
+else
+  echo "   ✅ Domain mapping already exists"
+fi
+
+# Step 10: Configure DNS (idempotent)
 echo ""
-CLOUD_RUN_URL=$(echo $SERVICE_URL | sed 's|https://||')
-echo "📋 Point your domain to Cloud Run:"
+echo "🔟 Configuring DNS records..."
+DNS_ZONE="celebratingcc-com"
+DNS_NAME="$DOMAIN."
+
+# Check if A records exist
+A_RECORDS_EXIST=$(gcloud dns record-sets list \
+  --zone=$DNS_ZONE \
+  --project=$PROJECT_ID \
+  --filter="type=A AND name=$DNS_NAME" \
+  --format="value(name)" 2>/dev/null)
+
+if [ -z "$A_RECORDS_EXIST" ]; then
+  echo "   Creating A records..."
+  gcloud dns record-sets create $DNS_NAME \
+    --zone=$DNS_ZONE \
+    --type=A \
+    --ttl=300 \
+    --rrdatas="216.239.32.21,216.239.34.21,216.239.36.21,216.239.38.21" \
+    --project=$PROJECT_ID && {
+    echo "   ✅ A records created!"
+  } || {
+    echo "   ⚠️  Failed to create A records"
+  }
+else
+  echo "   ✅ A records already exist"
+fi
+
+# Check if AAAA records exist
+AAAA_RECORDS_EXIST=$(gcloud dns record-sets list \
+  --zone=$DNS_ZONE \
+  --project=$PROJECT_ID \
+  --filter="type=AAAA AND name=$DNS_NAME" \
+  --format="value(name)" 2>/dev/null)
+
+if [ -z "$AAAA_RECORDS_EXIST" ]; then
+  echo "   Creating AAAA records..."
+  gcloud dns record-sets create $DNS_NAME \
+    --zone=$DNS_ZONE \
+    --type=AAAA \
+    --ttl=300 \
+    --rrdatas="2001:4860:4802:32::15,2001:4860:4802:34::15,2001:4860:4802:36::15,2001:4860:4802:38::15" \
+    --project=$PROJECT_ID && {
+    echo "   ✅ AAAA records created!"
+  } || {
+    echo "   ⚠️  Failed to create AAAA records"
+  }
+else
+  echo "   ✅ AAAA records already exist"
+fi
+
+# Check SSL certificate status
 echo ""
-echo "   Add this DNS record:"
-echo "   Type: CNAME"
-echo "   Name: celebratingcc.com (or @)"
-echo "   Value: $CLOUD_RUN_URL"
+echo "🔒 Checking SSL certificate status..."
+CERT_STATUS=$(gcloud beta run domain-mappings describe $DOMAIN \
+  --region=$REGION \
+  --project=$PROJECT_ID \
+  --format="value(status.conditions.type:filter=CertificateProvisioned.status)" 2>/dev/null || echo "Unknown")
+
+case "$CERT_STATUS" in
+  "True")
+    echo "   ✅ SSL certificate is active"
+    ;;
+  "Unknown")
+    echo "   ⏳ SSL certificate provisioning in progress..."
+    echo "      This can take up to 24 hours after DNS propagates"
+    ;;
+  *)
+    echo "   ⏳ Waiting for DNS propagation and SSL certificate"
+    ;;
+esac
+
 echo ""
-echo "   OR use gcloud run domain-mappings:"
-gcloud run domain-mappings create --service wedding-rsvp --domain celebratingcc.com --region=$REGION 2>/dev/null && echo "✅ Domain mapping created!" || echo "⚠️  Manual DNS setup required"
+echo "✅ Deployment Complete!"
+echo "========================"
 echo ""
-echo "📝 Final Steps:"
-echo "   1. ✅ OAuth redirect configured"
+echo "🌐 URLs:"
+echo "   Direct:  $SERVICE_URL"
+echo "   Custom:  https://$DOMAIN"
+echo ""
+echo "📋 Next Steps:"
+echo "   1. ✅ OAuth redirect URL: https://$DOMAIN/api/auth/google/callback"
 echo "   2. ✅ Domain mapping configured"
-echo "   3. Test at: https://celebratingcc.com/manage"
+echo "   3. ✅ DNS records configured"
+echo "   4. ⏳ Wait for SSL certificate (can take up to 24 hours)"
+echo ""
+echo "🧪 Test your site:"
+echo "   - Admin portal: https://$DOMAIN/manage"
+echo "   - Check DNS: dig $DOMAIN A +short"
 echo ""
