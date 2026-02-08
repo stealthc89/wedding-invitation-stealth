@@ -5,13 +5,13 @@ import { useState, useEffect, useRef } from "react";
 // Fallback photos if API returns empty and no photos prop is given
 // High-quality images representing the couple's romantic journey
 const FALLBACK_PHOTOS = [
-  "/media/venice-gondola-romantic-moment.webp",
-  "/media/venice-basilica-couple-kiss.webp",
-  "/media/singapore-marina-bay-sands-professional.webp",
-  "/media/bali-temple-jumping-reflection.webp",
-  "/media/egypt-pyramids-camels-couple.webp",
-  "/media/snow-mountains-sunset-cuddle.webp",
-  "/media/scuba-diving-couple-underwater-heart.webp",
+  "/media/venice-gondola-romantic-moment.jpeg",
+  "/media/venice-basilica-couple-kiss.jpeg",
+  "/media/singapore-marina-bay-sands-professional.jpeg",
+  "/media/bali-temple-jumping-reflection.jpeg",
+  "/media/egypt-pyramids-camels-couple.jpeg",
+  "/media/snow-mountains-sunset-cuddle.jpeg",
+  "/media/scuba-diving-couple-underwater-heart.jpeg",
 ];
 
 // Each slide gets a different zoom origin for variety
