@@ -114,12 +114,14 @@ export default function PhotoSlideshow({
     if (activePhotos.length === 0) return;
 
     const timer = setInterval(() => {
-      setPrevious(current);
-      setCurrent((prev) => (prev + 1) % activePhotos.length);
+      setCurrent((prev) => {
+        setPrevious(prev);
+        return (prev + 1) % activePhotos.length;
+      });
     }, interval);
 
     return () => clearInterval(timer);
-  }, [activePhotos.length, interval, current]);
+  }, [activePhotos.length, interval]);
 
   const overlayClass =
     overlay === "dark"
