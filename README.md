@@ -5,10 +5,13 @@ A self-hosted, single-container wedding guest RSVP website with admin portal. Bu
 ## Features
 
 - **Guest RSVP**: Unique private links per guest, no login required
-- **Admin Portal**: Dashboard, guest management, CSV upload/export, email templates
-- **Email Automation**: Invitation, reminder, and itinerary emails via SMTP
-- **Analytics**: Attendance counts, meal preference breakdown, response rates
-- **Media Support**: Upload background images and videos
+- **Admin Portal**: Dashboard, guest management, CSV/Excel upload/export, email templates
+- **Email Automation**: Invitation, reminder, itinerary, and RSVP confirmation emails via SMTP
+- **Photo Challenges**: Admin-defined prompts randomly assigned to guests on RSVP
+- **Guest Photo Upload**: Mobile-first upload page via global QR code — no login needed
+- **QR Code**: Print-ready QR code (SVG/PNG) linking to the photo upload page
+- **Analytics**: Attendance counts, meal preferences, response rates, photo upload stats
+- **Media Support**: Ken Burns animated slideshow with dynamic photo loading
 - **Backup**: One-click database download + scripted backups to cloud storage
 
 ## Architecture
@@ -51,9 +54,10 @@ Things only you can do — the app is ready, but needs your content and credenti
 ### After First Deployment
 
 - [ ] **Upload your guest list** — Sign in at `/manage/login`, go to Guests, upload your CSV or Excel file (see [Uploading Your Guest List](#uploading-your-guest-list))
-- [ ] **Customize email templates** — Go to Email Templates in the admin, update the invitation/reminder/itinerary HTML with your wedding details (date, venue, schedule, dress code)
+- [ ] **Add photo challenges** — Go to Challenges in the admin, add 5–10 fun prompts (see [Photo Challenges & Guest Uploads](#photo-challenges--guest-uploads))
+- [ ] **Customize email templates** — Go to Templates in the admin, update the invitation/reminder/itinerary/confirmation HTML with your wedding details (date, venue, schedule, dress code)
 - [ ] **Provide wedding details** — The home page currently says "Chris & Candice" with placeholder text. Update `src/app/page.tsx` with your date, venue, and any other info
-- [ ] **Send test invitation** — Add yourself as a test guest, send an invitation email, click the link, and submit a test RSVP to verify the full flow
+- [ ] **Send test invitation** — Add yourself as a test guest, send an invitation email, click the link, and submit a test RSVP to verify the full flow (check that photo challenges appear in the confirmation)
 - [ ] **Upload additional photos/videos** — Use the Media page in admin (`/manage/media`) to add more, or commit them to `public/media/`
 
 ### Before Sending Real Invitations
@@ -61,6 +65,7 @@ Things only you can do — the app is ready, but needs your content and credenti
 - [ ] **Set a custom domain** (optional) — Map your domain to Cloud Run. Update `BASE_URL` and OAuth redirect URIs
 - [ ] **Set the RSVP deadline** — In admin Settings, set the `rsvp_deadline` key (e.g., `2026-09-01`) to auto-close RSVPs after that date
 - [ ] **Review guest list** — Verify all names, emails, and plus-one permissions are correct
+- [ ] **Print the QR code** — Go to Dashboard, download the photo upload QR code (PNG), and print it for display at the venue
 - [ ] **Send invitations** — Use the Dashboard "Send Invitations" button or the Guests page email actions
 
 ## Quick Start (Local Development)
@@ -149,39 +154,61 @@ Admin access uses **Google OAuth**. Only Gmail addresses listed in `ADMIN_EMAILS
 
 ```sql
 guests (id, token, name, email, plus_one_allowed, rsvp_status,
-        attending, plus_one_attending, meal_preference, responded_at)
+        attending, plus_one_attending, meal_preference, dietary_notes,
+        responded_at)
 
 email_templates (id, slug, name, subject, body_html)
+-- Pre-seeded: invitation, reminder, itinerary, confirmation
 
 email_log (id, guest_id, template_slug, sent_at, status)
 
 settings (key, value)
+-- Keys: rsvp_deadline, slideshow_photos
+
+photo_challenges (id, text, created_at)
+-- Admin-defined prompts, e.g. "Take a selfie with the groom"
+
+guest_challenges (id, guest_id, challenge_id)
+-- 2-3 random challenges assigned per guest on RSVP accept
+
+photo_uploads (id, guest_name, filename, file_size,
+              matched_guest_id, uploaded_at)
+-- Guest-uploaded photos via the public /upload page
 ```
 
 ## API Endpoints
 
-### Guest (Public)
-- `GET /api/rsvp?token=xxx` — Fetch guest info
-- `POST /api/rsvp` — Submit RSVP
+### Public (No Auth)
+- `GET /api/rsvp?token=xxx` — Fetch guest info + assigned challenges
+- `POST /api/rsvp` — Submit RSVP (assigns challenges, sends confirmation email)
+- `POST /api/upload` — Upload guest photos (name + files, no auth)
+- `GET /api/slideshow` — Get slideshow photo list
 
-### Admin (Authenticated)
+### Auth
 - `GET /api/auth/google` — Initiate Google OAuth sign-in
 - `GET /api/auth/google/callback` — OAuth callback (sets session)
 - `DELETE /api/auth` — Logout
 - `GET /api/auth/me` — Check session
+
+### Admin (Authenticated)
 - `GET /api/admin/guests` — List guests (add `?format=csv` for export)
-- `POST /api/admin/guests` — Add guest (JSON) or upload CSV (multipart)
+- `POST /api/admin/guests` — Add guest (JSON) or upload CSV/Excel (multipart)
 - `PUT /api/admin/guests` — Update guest
 - `DELETE /api/admin/guests` — Remove guest
-- `GET /api/admin/analytics` — Dashboard statistics
+- `GET/POST/PUT/DELETE /api/admin/challenges` — Photo challenge CRUD
+- `GET /api/admin/photos` — List uploaded guest photos (filter: `?guest=name`)
+- `GET /api/admin/photos?download=filename` — Download single photo
+- `GET /api/admin/photos?zip=all` — Download all photos as ZIP
+- `DELETE /api/admin/photos` — Delete a photo
+- `GET /api/admin/qr` — QR code for upload page (SVG; add `?format=png` for PNG)
+- `GET /api/admin/analytics` — Dashboard statistics + photo stats
 - `POST /api/admin/email` — Send emails
 - `GET /api/admin/email` — Email send log
 - `GET /api/admin/templates` — List email templates
 - `PUT /api/admin/templates` — Update template
 - `GET /api/admin/backup` — Download database
 - `GET/PUT /api/admin/settings` — Manage settings
-- `POST /api/admin/media` — Upload media file
-- `GET /api/admin/media` — List media files
+- `GET/POST/DELETE /api/admin/media` — Site media management
 
 ## Guest CSV Format
 
@@ -264,6 +291,53 @@ Upload `.xlsx` files directly — no conversion needed:
 
 Use the **Add Guest** form on the Guests page in the admin console to add guests individually.
 
+## Photo Challenges & Guest Uploads
+
+Encourage guests to take fun, candid photos during the wedding and upload them via a single global QR code.
+
+### How It Works
+
+1. **Admin creates challenges** — Go to `/manage/challenges` and add prompts like:
+   - "Take a selfie with the groom"
+   - "Best dance floor moment"
+   - "Capture someone arriving"
+   - "Snap the first dance"
+   - "Photo of your table setting"
+
+2. **Guests get assigned challenges** — When a guest RSVPs "attending", the system randomly assigns them 2–3 challenges from the pool. Challenges appear on:
+   - The RSVP confirmation page
+   - The confirmation email (auto-sent)
+
+3. **Print the QR code** — From the Dashboard, download the QR code (SVG or print-ready 1024px PNG). Display it at the venue — on tables, near the entrance, or on a sign.
+
+4. **Guests upload photos** — Guests scan the QR code, enter their name, select photos, and tap upload. No login, no accounts, no app downloads. The page is mobile-first and loads fast.
+
+5. **Admin reviews photos** — Go to `/manage/photos` to see all uploaded photos in a gallery grid. Filter by guest name, download individual photos, or download everything as a ZIP.
+
+### Photo Storage
+
+Photos are stored in `data/photos/` (which is GCS-mounted on Cloud Run). Each file is named `guestname_timestamp_uuid.ext` — flat directory, no nesting.
+
+**Upload limits**: 10 MB per file, 20 files per upload. Accepted formats: JPG, PNG, WebP, HEIC.
+
+**Guest matching**: When a guest uploads, their name is matched case-insensitively against the guest list. Matched photos show a "matched" badge in the admin gallery. Imperfect matches can be reconciled manually.
+
+**Cost**: ~200 guests × ~5 photos × ~3 MB = ~3 GB on GCS = $0.06/month.
+
+### Email Template Variables
+
+The confirmation email template (`confirmation` slug) supports these variables:
+
+| Variable | Description |
+|----------|-------------|
+| `{{guest_name}}` | Guest's name |
+| `{{rsvp_link}}` | Link to guest's RSVP page |
+| `{{upload_link}}` | Link to the photo upload page |
+| `{{photo_challenges_section}}` | Formatted HTML block with assigned challenges + upload link |
+| `{{photo_challenges}}` | Just the challenge list items (for custom layouts) |
+
+All templates also support `{{guest_name}}`, `{{rsvp_link}}`, and `{{upload_link}}`.
+
 ## Storage & Resilience
 
 ### Cloud Run (GCS bucket mount)
@@ -293,7 +367,7 @@ Docker Compose uses local named volumes. Data persists across container restarts
 | Resource | Monthly Cost |
 |----------|-------------|
 | Cloud Run (scales to zero) | $0 (free tier) |
-| GCS data bucket (~100KB DB) | < $0.01 |
+| GCS data bucket (~100KB DB + ~3GB photos) | < $0.10 |
 | GCS backup bucket | < $0.10 |
 | Domain (optional) | $0–12/year |
 | Resend email (100/mo free) | $0 |
