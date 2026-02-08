@@ -128,34 +128,35 @@ export default function AdminLayout({
           </div>
         </div>
 
-        {/* Mobile Menu Dropdown */}
-        {device.isMobile && mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg">
-            <div className="py-2">
-              {NAV_ITEMS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-3 text-base ${
-                    pathname === item.href
-                      ? "bg-gray-100 text-gray-900 font-medium"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {item.icon} {item.label}
-                </Link>
-              ))}
-              <a
-                href="/api/admin/backup"
-                className="block px-4 py-3 text-base text-gray-600 hover:bg-gray-50"
-              >
-                💾 Download Backup
-              </a>
-            </div>
-          </div>
-        )}
       </nav>
+
+      {/* Mobile Menu Dropdown - Fixed positioning outside nav to prevent sticky positioning issues */}
+      {device.isMobile && mobileMenuOpen && (
+        <div className="fixed top-[57px] left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-40">
+          <div className="py-2">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-4 py-3 text-base ${
+                  pathname === item.href
+                    ? "bg-gray-100 text-gray-900 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {item.icon} {item.label}
+              </Link>
+            ))}
+            <a
+              href="/api/admin/backup"
+              className="block px-4 py-3 text-base text-gray-600 hover:bg-gray-50"
+            >
+              💾 Download Backup
+            </a>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">{children}</main>
     </div>

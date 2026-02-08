@@ -44,7 +44,7 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
     if (!audio) return;
 
     audio.muted = !audio.muted;
-    setIsMuted(!isMuted);
+    setIsMuted(audio.muted); // Sync state with actual audio element status
   };
 
   return (

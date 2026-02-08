@@ -77,7 +77,7 @@ export default function PhotoSlideshow({
         };
       }
     });
-  }, [photos, loaded]);
+  }, [photos]); // Removed 'loaded' to prevent infinite loop
 
   useEffect(() => {
     if (photos.length === 0) return;
@@ -87,7 +87,7 @@ export default function PhotoSlideshow({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [current, photos, interval]);
+  }, [photos.length, interval]); // Removed 'current' to prevent interval recreation
 
   const overlayClass =
     overlay === "dark"
