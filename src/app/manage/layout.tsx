@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/manage/photos", label: "Photos" },
   { href: "/manage/templates", label: "Templates" },
   { href: "/manage/media", label: "Media" },
+  { href: "/manage/help", label: "Help" },
 ];
 
 export default function AdminLayout({

@@ -60,7 +60,19 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">Monitor RSVPs, send emails, and manage your event</p>
+        </div>
+        <a
+          href="/manage/help"
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors flex items-center gap-2"
+        >
+          <span>?</span>
+          <span>Help</span>
+        </a>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -137,10 +149,10 @@ export default function DashboardPage() {
       )}
 
       {/* QR Code */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Photo Upload QR Code</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Print this QR code and display it at the venue. Guests scan it to upload photos.
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-purple-900 mb-2">📸 Photo Upload QR Code</h2>
+        <p className="text-sm text-purple-700 mb-4">
+          Print this QR code and display it at the venue. Guests scan it to upload photos — no login required!
         </p>
         <div className="flex items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -152,16 +164,16 @@ export default function DashboardPage() {
           <div className="space-y-2">
             <a
               href="/api/admin/qr?format=png"
-              className="block px-4 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-700 text-center"
+              className="block px-4 py-2.5 bg-purple-700 text-white rounded-lg text-sm font-medium hover:bg-purple-800 text-center transition-colors shadow-sm"
             >
-              Download PNG (print-ready)
+              ⬇️ Download PNG (print-ready)
             </a>
             <a
               href="/api/admin/qr"
               target="_blank"
-              className="block px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 text-center"
+              className="block px-4 py-2.5 bg-white border-2 border-purple-300 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-50 text-center transition-colors"
             >
-              Open SVG
+              👁️ Open SVG
             </a>
           </div>
         </div>
@@ -204,13 +216,17 @@ export default function DashboardPage() {
 
       {/* Email Actions */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">
           Email Actions
         </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Send invitations, reminders, or itinerary to guests. Emails are sent only to relevant guests.
+        </p>
         {sendResult && (
-          <p className="text-sm text-blue-600 bg-blue-50 p-2 rounded mb-4">
-            {sendResult}
-          </p>
+          <div className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg mb-4 flex items-start gap-2">
+            <span className="text-green-600">✓</span>
+            <span>{sendResult}</span>
+          </div>
         )}
         <div className="flex flex-wrap gap-3">
           <button
