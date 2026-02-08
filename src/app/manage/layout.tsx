@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/manage/photos", label: "Photos", icon: "📷" },
   { href: "/manage/templates", label: "Templates", icon: "✉️" },
   { href: "/manage/media", label: "Media", icon: "🖼️" },
+  { href: "/manage/settings", label: "Settings", icon: "⚙️" },
   { href: "/manage/help", label: "Help", icon: "❓" },
 ];
 
@@ -94,14 +95,6 @@ export default function AdminLayout({
 
           {/* Right side actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {!device.isMobile && (
-              <a
-                href="/api/admin/backup"
-                className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
-              >
-                💾 Backup
-              </a>
-            )}
             <button
               onClick={handleLogout}
               className="text-sm text-red-600 hover:text-red-700 whitespace-nowrap"
@@ -148,12 +141,6 @@ export default function AdminLayout({
                 {item.icon} {item.label}
               </Link>
             ))}
-            <a
-              href="/api/admin/backup"
-              className="block px-4 py-3 text-base text-gray-600 hover:bg-gray-50"
-            >
-              💾 Download Backup
-            </a>
           </div>
         </div>
       )}

@@ -11,12 +11,13 @@ export async function GET() {
 
   const db = getDb();
 
+  // Only count primary guests (not companions) for invitation metrics
   const totalInvited = (
-    db.prepare("SELECT COUNT(*) as c FROM guests").get() as { c: number } | undefined
+    db.prepare("SELECT COUNT(*) as c FROM guests WHERE (is_plus_one = 0 OR is_plus_one IS NULL)").get() as { c: number } | undefined
   )?.c ?? 0;
 
   const totalResponded = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE rsvp_status = 'responded'").get() as {
+    db.prepare("SELECT COUNT(*) as c FROM guests WHERE rsvp_status = 'responded' AND (is_plus_one = 0 OR is_plus_one IS NULL)").get() as {
       c: number;
     } | undefined
   )?.c ?? 0;
@@ -24,17 +25,18 @@ export async function GET() {
   const outstanding = totalInvited - totalResponded;
 
   const totalAttending = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 1").get() as { c: number } | undefined
+    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 1 AND (is_plus_one = 0 OR is_plus_one IS NULL)").get() as { c: number } | undefined
   )?.c ?? 0;
 
   const totalDeclined = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 0 AND rsvp_status = 'responded'").get() as {
+    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 0 AND rsvp_status = 'responded' AND (is_plus_one = 0 OR is_plus_one IS NULL)").get() as {
       c: number;
     } | undefined
   )?.c ?? 0;
 
+  // Count companion guest records for Plus Ones
   const totalPlusOnes = (
-    db.prepare("SELECT COALESCE(SUM(plus_one_attending), 0) as c FROM guests WHERE attending = 1").get() as {
+    db.prepare("SELECT COUNT(*) as c FROM guests WHERE is_plus_one = 1").get() as {
       c: number;
     } | undefined
   )?.c ?? 0;
@@ -62,6 +64,26 @@ export async function GET() {
     )
     .all() as { date: string; count: number }[] | undefined) ?? [];
 
+  // Challenge distribution by category
+  const challengesByCategory = (db
+    .prepare(
+      `SELECT
+        pc.category,
+        COUNT(DISTINCT pc.id) as total_challenges,
+        COUNT(gc.id) as total_assignments
+      FROM photo_challenges pc
+      LEFT JOIN guest_challenges gc ON pc.id = gc.challenge_id
+      WHERE pc.category IS NOT NULL
+      GROUP BY pc.category
+      ORDER BY pc.category`
+    )
+    .all() as { category: string; total_challenges: number; total_assignments: number }[] | undefined) ?? [];
+
+  // Total headcount is everyone attending (primary guests + companions)
+  const totalHeadcount = (
+    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 1").get() as { c: number } | undefined
+  )?.c ?? 0;
+
   return NextResponse.json({
     totalInvited,
     totalResponded,
@@ -69,10 +91,11 @@ export async function GET() {
     totalAttending,
     totalDeclined,
     totalPlusOnes,
-    totalHeadcount: totalAttending + totalPlusOnes,
+    totalHeadcount,
     mealBreakdown,
     totalPhotos,
     photosByGuest,
     photosOverTime,
+    challengesByCategory,
   });
 }

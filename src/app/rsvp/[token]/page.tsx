@@ -174,7 +174,25 @@ export default function RSVPPage() {
             Chris & Candice
           </h1>
           <div className="w-12 h-px bg-white/40 mx-auto my-4" />
-          <p className="text-xl text-white/90">{guest.name}</p>
+          <p className="text-xl text-white/90 mb-6">{guest.name}</p>
+
+          {/* Wedding Date & Location */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mt-6 text-white">
+            <p className="text-2xl font-semibold mb-4">Saturday, 23rd May 2026</p>
+            <div className="space-y-4 text-sm">
+              <div>
+                <p className="font-semibold text-base mb-1">Ceremony - 1:00 PM</p>
+                <p className="text-white/80">Wood Green New Testament Church of God</p>
+                <p className="text-white/80 text-xs">Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
+              </div>
+              <div className="w-16 h-px bg-white/20 mx-auto" />
+              <div>
+                <p className="font-semibold text-base mb-1">Reception - 3:30 PM onwards</p>
+                <p className="text-white/80">Loughton Grand Marquee</p>
+                <p className="text-white/80 text-xs">Langston Road, Loughton, IG10 3TG</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Deadline notice */}

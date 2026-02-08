@@ -63,6 +63,12 @@ variable "email_from" {
   default     = "wedding@yourdomain.com"
 }
 
+variable "cron_secret" {
+  description = "Secret for authenticating cron requests"
+  type        = string
+  sensitive   = true
+}
+
 variable "deploy_timestamp" {
   description = "Deployment timestamp to force new revisions"
   type        = string
@@ -183,6 +189,18 @@ resource "google_cloud_run_v2_service" "wedding" {
         name  = "DEPLOY_TIMESTAMP"
         value = var.deploy_timestamp
       }
+      env {
+        name  = "CRON_SECRET"
+        value = var.cron_secret
+      }
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "BACKUP_BUCKET"
+        value = google_storage_bucket.backups.name
+      }
 
       resources {
         limits = {
@@ -217,6 +235,46 @@ resource "google_cloud_run_v2_service" "wedding" {
 
 # IAM binding is now handled by deploy.sh Step 7 via gcloud command
 # (removed Terraform resource to avoid permission issues)
+
+# Service account for Cloud Scheduler to invoke Cloud Run
+resource "google_service_account" "scheduler" {
+  account_id   = "wedding-scheduler"
+  display_name = "Wedding Scheduler service account"
+}
+
+# Grant scheduler permission to invoke Cloud Run
+resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
+  location = google_cloud_run_v2_service.wedding.location
+  service  = google_cloud_run_v2_service.wedding.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.scheduler.email}"
+}
+
+# Cloud Scheduler job for daily database backups
+resource "google_cloud_scheduler_job" "daily_backup" {
+  name             = "wedding-daily-backup"
+  description      = "Daily database backup at 2 AM"
+  schedule         = "0 2 * * *"
+  time_zone        = "America/New_York"
+  attempt_deadline = "320s"
+
+  retry_config {
+    retry_count = 3
+  }
+
+  http_target {
+    http_method = "GET"
+    uri         = "${google_cloud_run_v2_service.wedding.uri}/api/cron/daily-backup"
+
+    headers = {
+      "x-cloudscheduler" = var.cron_secret
+    }
+
+    oidc_token {
+      service_account_email = google_service_account.scheduler.email
+    }
+  }
+}
 
 output "service_url" {
   description = "Cloud Run service URL"

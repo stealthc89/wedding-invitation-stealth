@@ -8,3 +8,4 @@ jwt_secret           = "b4fa2b7f850f0e9cbd2fcd751a8cfb79043b8f8974e71d33a0a24678
 base_url             = "https://celebratingcc.com"
 smtp_pass            = "re_cK35Gp5a_8j8i9PxdVDmkDPY7ddkwUfjh"
 email_from           = "noreply@celebratingcc.com"
+cron_secret          = "09aeeea768c275b45f0091b57866d4fe57e9683595de1abffb4031d31a1cad7e"

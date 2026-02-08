@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import getDb from "@/lib/db";
 import { sendTemplateEmail } from "@/lib/email";
 import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { v4 as uuidv4 } from "uuid";
 
 // GET /api/rsvp?token=xxx — fetch guest info by token
 export async function GET(req: NextRequest) {
@@ -157,31 +158,67 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Create guest records for each companion (plus-one)
+    if (attending && finalPlusOneCount > 0 && finalPlusOneNames) {
+      try {
+        const companionNames = JSON.parse(finalPlusOneNames) as string[];
+        const companionMeals = finalPlusOneMealPreference ? JSON.parse(finalPlusOneMealPreference) as string[] : [];
+        const companionDietary = finalPlusOneDietaryNotes ? JSON.parse(finalPlusOneDietaryNotes) as string[] : [];
+
+        const insertCompanion = db.prepare(
+          `INSERT INTO guests (token, name, email, is_plus_one, linked_to_guest_id, rsvp_status, attending, meal_preference, dietary_notes)
+           VALUES (?, ?, ?, 1, ?, 'responded', 1, ?, ?)`
+        );
+
+        for (let i = 0; i < companionNames.length && i < finalPlusOneCount; i++) {
+          const companionName = companionNames[i]?.trim();
+          if (companionName) {
+            insertCompanion.run(
+              uuidv4(),
+              companionName,
+              null, // Companions don't have their own email
+              guest.id,
+              companionMeals[i] || "no_preference",
+              companionDietary[i] || null
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Failed to create companion guest records:", error);
+        // Don't fail the RSVP if companion creation fails
+      }
+    }
+
     // Assign balanced photo challenges if attending
     let assignedChallenges: string[] = [];
     if (attending) {
-      // Get all challenges with their assignment counts for balanced distribution
-      const allChallenges = db
-        .prepare(`
-          SELECT
-            pc.id,
-            pc.text,
-            COUNT(gc.id) as assignment_count
-          FROM photo_challenges pc
-          LEFT JOIN guest_challenges gc ON pc.id = gc.challenge_id
-          GROUP BY pc.id, pc.text
-          ORDER BY assignment_count ASC, RANDOM()
-        `)
-        .all() as { id: number; text: string; assignment_count: number }[];
+      // Get one challenge from each category to ensure variety across different parts of the day
+      const categories = ["CHURCH_CEREMONY", "ARRIVAL_SOCIAL", "FOOD_SPEECHES", "DANCE_FLOOR", "LATE_NIGHT"];
+      const selected: { id: number; text: string }[] = [];
 
-      if (allChallenges.length > 0) {
-        // Pick 2-3 challenges (favor least-assigned for symmetrical distribution)
-        const count = Math.min(
-          allChallenges.length,
-          allChallenges.length <= 3 ? allChallenges.length : Math.random() < 0.5 ? 2 : 3
-        );
-        const selected = allChallenges.slice(0, count);
+      for (const category of categories) {
+        // Get the least-assigned challenge from this category
+        const challenge = db
+          .prepare(`
+            SELECT
+              pc.id,
+              pc.text,
+              COUNT(gc.id) as assignment_count
+            FROM photo_challenges pc
+            LEFT JOIN guest_challenges gc ON pc.id = gc.challenge_id
+            WHERE pc.category = ?
+            GROUP BY pc.id, pc.text
+            ORDER BY assignment_count ASC, RANDOM()
+            LIMIT 1
+          `)
+          .get(category) as { id: number; text: string; assignment_count: number } | undefined;
 
+        if (challenge) {
+          selected.push({ id: challenge.id, text: challenge.text });
+        }
+      }
+
+      if (selected.length > 0) {
         const insertChallenge = db.prepare(
           "INSERT OR IGNORE INTO guest_challenges (guest_id, challenge_id) VALUES (?, ?)"
         );

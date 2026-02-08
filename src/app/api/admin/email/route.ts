@@ -39,6 +39,17 @@ export async function POST(req: NextRequest) {
         .prepare("SELECT id FROM guests WHERE attending = 1 AND email != ''")
         .all() as { id: number }[];
       targets = guests.map((g) => g.id);
+    } else if (templateSlug === "photo_challenge_reminder") {
+      // Send to attending guests who have photo challenges assigned
+      const guests = db
+        .prepare(`
+          SELECT DISTINCT g.id
+          FROM guests g
+          INNER JOIN guest_challenges gc ON g.id = gc.guest_id
+          WHERE g.attending = 1 AND g.email != ''
+        `)
+        .all() as { id: number }[];
+      targets = guests.map((g) => g.id);
     }
   }
 

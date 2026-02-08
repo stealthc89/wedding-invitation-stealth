@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.19.0",
     "better-sqlite3": "^12.6.2",
     "csv-parse": "^6.1.0",
     "csv-stringify": "^6.6.0",

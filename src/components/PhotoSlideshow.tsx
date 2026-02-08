@@ -37,7 +37,7 @@ export default function PhotoSlideshow({
   children,
 }: PhotoSlideshowProps) {
   const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(-1); // Start at -1 to trigger fade-in
   const [previous, setPrevious] = useState<number | null>(null);
   const [loaded, setLoaded] = useState<Set<number>>(new Set());
   const [activePhotos, setActivePhotos] = useState<string[]>([]);
@@ -66,10 +66,12 @@ export default function PhotoSlideshow({
   // Use a small delay to ensure smooth fade-in transition
   useEffect(() => {
     if (activePhotos.length === 0 && photos.length > 0 && loaded.has(0)) {
-      // Small delay ensures the image is fully rendered before fade-in starts
+      // Add photo to DOM first
+      setActivePhotos([photos[0]]);
+      // Then trigger fade-in after a tiny delay
       setTimeout(() => {
-        setActivePhotos([photos[0]]);
-      }, 50);
+        setCurrent(0);
+      }, 20);
     }
   }, [photos, activePhotos.length, loaded.size]);
 
@@ -120,7 +122,10 @@ export default function PhotoSlideshow({
     // Start with first 6 images once they're loaded (allows transition from initial single photo)
     if (loadedPhotos.length >= INITIAL_BATCH_SIZE && activePhotos.length <= 1) {
       setActivePhotos(loadedPhotos.slice(0, INITIAL_BATCH_SIZE));
-      setCurrent(0); // Reset to first photo when starting slideshow
+      // Only set to 0 if not already set (prevents resetting fade-in)
+      if (current === -1) {
+        setCurrent(0);
+      }
     }
     // Add newly loaded images to rotation (only after we have at least 6)
     else if (activePhotos.length >= INITIAL_BATCH_SIZE && loadedPhotos.length > activePhotos.length) {

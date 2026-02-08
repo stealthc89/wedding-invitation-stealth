@@ -47,6 +47,7 @@ export default function GuestsPage() {
   const [newPlusOneCount, setNewPlusOneCount] = useState(0);
   const [newIsUnder10, setNewIsUnder10] = useState(false);
   const [newIsPlusOne, setNewIsPlusOne] = useState(false);
+  const [newLinkedToGuestId, setNewLinkedToGuestId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Guest>>({});
   const [message, setMessage] = useState("");
@@ -150,6 +151,13 @@ export default function GuestsPage() {
 
   async function addGuest(e: React.FormEvent) {
     e.preventDefault();
+
+    // Validate: if is_plus_one is checked, linked_to_guest_id must be selected
+    if (newIsPlusOne && !newLinkedToGuestId) {
+      showToast("✗ Please select which primary guest this plus-one is linked to", "error");
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/guests", {
         method: "POST",
@@ -161,6 +169,7 @@ export default function GuestsPage() {
           plus_one_allowed: newPlusOneCount,
           is_under_10: newIsUnder10,
           is_plus_one: newIsPlusOne,
+          linked_to_guest_id: newLinkedToGuestId,
         }),
       });
       if (res.ok) {
@@ -170,6 +179,7 @@ export default function GuestsPage() {
         setNewPlusOneCount(0);
         setNewIsUnder10(false);
         setNewIsPlusOne(false);
+        setNewLinkedToGuestId(null);
         setShowAdd(false);
         showToast(`✓ Guest "${newName}" added successfully`, "success");
         fetchGuests();
@@ -512,11 +522,13 @@ export default function GuestsPage() {
 
   const filtered = guests
     .filter((g) => {
-      if (filter === "responded") return g.rsvp_status === "responded";
-      if (filter === "pending") return g.rsvp_status === "pending";
+      // Status filters like responded/pending/declined only apply to primary guests
+      if (filter === "responded") return g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
+      if (filter === "pending") return g.rsvp_status === "pending" && (g.is_plus_one === 0 || !g.is_plus_one);
+      // Attending includes both primary guests and companion guests
       if (filter === "attending") return g.attending === 1;
       if (filter === "declined")
-        return g.attending === 0 && g.rsvp_status === "responded";
+        return g.attending === 0 && g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
       if (filter === "plus_ones") return g.is_plus_one === 1;
       if (filter === "primary_guests") return g.is_plus_one === 0 || !g.is_plus_one;
       return true;
@@ -728,13 +740,41 @@ export default function GuestsPage() {
               type="checkbox"
               id="newIsPlusOne"
               checked={newIsPlusOne}
-              onChange={(e) => setNewIsPlusOne(e.target.checked)}
+              onChange={(e) => {
+                setNewIsPlusOne(e.target.checked);
+                if (!e.target.checked) {
+                  setNewLinkedToGuestId(null);
+                }
+              }}
               className="w-4 h-4"
             />
             <label htmlFor="newIsPlusOne" className="text-xs text-gray-600 cursor-pointer">
               Is a plus-one
             </label>
           </div>
+          {newIsPlusOne && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">
+                Linked to primary guest <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={newLinkedToGuestId || ""}
+                onChange={(e) => setNewLinkedToGuestId(e.target.value ? parseInt(e.target.value) : null)}
+                className="border border-gray-300 rounded px-2 py-1.5 text-sm w-full"
+                required
+              >
+                <option value="">Select primary guest...</option>
+                {guests
+                  .filter((g) => !g.is_plus_one)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
           <button
             type="submit"
             className="px-3 py-1.5 bg-green-700 text-white rounded text-sm hover:bg-green-800"
@@ -759,10 +799,12 @@ export default function GuestsPage() {
             {f === "primary_guests" ? "Primary Guests" : f === "plus_ones" ? "Plus Ones" : f.charAt(0).toUpperCase() + f.slice(1)} ({f === "all"
               ? guests.length
               : guests.filter((g) => {
-                  if (f === "responded") return g.rsvp_status === "responded";
-                  if (f === "pending") return g.rsvp_status === "pending";
+                  // Status filters like responded/pending/declined only count primary guests
+                  if (f === "responded") return g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
+                  if (f === "pending") return g.rsvp_status === "pending" && (g.is_plus_one === 0 || !g.is_plus_one);
+                  // Attending includes both primary guests and companion guests
                   if (f === "attending") return g.attending === 1;
-                  if (f === "declined") return g.attending === 0 && g.rsvp_status === "responded";
+                  if (f === "declined") return g.attending === 0 && g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
                   if (f === "plus_ones") return g.is_plus_one === 1;
                   if (f === "primary_guests") return g.is_plus_one === 0 || !g.is_plus_one;
                   return true;
@@ -1047,15 +1089,19 @@ export default function GuestsPage() {
                       </div>
                     </td>
                     <td className="px-2 py-2">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                          g.rsvp_status === "responded"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-amber-100 text-amber-700"
-                        }`}
-                      >
-                        {g.rsvp_status}
-                      </span>
+                      {g.is_plus_one === 1 ? (
+                        <span className="text-gray-400 text-xs">—</span>
+                      ) : (
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            g.rsvp_status === "responded"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {g.rsvp_status}
+                        </span>
+                      )}
                     </td>
                     <td className="px-2 py-2 text-gray-600 text-xs">
                       {g.attending === 1 ? "Yes" : g.attending === 0 ? "No" : "—"}

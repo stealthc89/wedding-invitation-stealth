@@ -146,60 +146,124 @@ function initSchema(db: Database.Database) {
     insert.run(
       "invitation",
       "RSVP Invitation",
-      "You're Invited! Please RSVP",
+      "You're Invited to Our Wedding! 💒",
       `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-  <h1 style="text-align: center; color: #2d2d2d;">You're Invited</h1>
+  <h1 style="text-align: center; color: #2d2d2d; margin-bottom: 10px;">You're Invited</h1>
+  <p style="text-align: center; font-size: 24px; color: #666; margin: 0 0 30px 0;">Chris & Candice</p>
+
   <p>Dear {{guest_name}},</p>
-  <p>We would be delighted to have you celebrate our special day with us.</p>
-  <p>Please let us know if you can attend by clicking the link below:</p>
+  <p>We would be delighted to have you celebrate our special day with us!</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d;">Wedding Day Details</h3>
+    <p style="margin: 8px 0;"><strong>Date:</strong> Saturday, 23rd May 2026</p>
+
+    <p style="margin: 16px 0 8px 0;"><strong>Ceremony</strong></p>
+    <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God</p>
+    <p style="margin: 4px 0; font-size: 14px;">Arcadian Gardens, High Road, Wood Green</p>
+    <p style="margin: 4px 0; font-size: 14px;">London, N22 5AA</p>
+    <p style="margin: 4px 0;"><em>Arrive: 12:30 PM | Ceremony: 1:00 PM</em></p>
+
+    <p style="margin: 16px 0 8px 0;"><strong>Reception</strong></p>
+    <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee</p>
+    <p style="margin: 4px 0; font-size: 14px;">Langston Road, Loughton, IG10 3TG</p>
+    <p style="margin: 4px 0;"><em>Canapés & Drinks: 3:30 PM onwards</em></p>
+  </div>
+
+  <p>Please RSVP by clicking the link below:</p>
   <p style="text-align: center; margin: 30px 0;">
-    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px;">RSVP Now</a>
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">RSVP Now</a>
   </p>
-  <p style="color: #888; font-size: 14px;">If the button doesn't work, copy this link: {{rsvp_link}}</p>
+
+  <p style="color: #888; font-size: 14px; text-align: center;">We can't wait to celebrate with you!</p>
 </div>`
     );
     insert.run(
       "reminder",
       "RSVP Reminder",
-      "Reminder: Please RSVP",
+      "Gentle Reminder: Please RSVP for Our Wedding 💒",
       `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
   <h1 style="text-align: center; color: #2d2d2d;">Gentle Reminder</h1>
   <p>Dear {{guest_name}},</p>
-  <p>We haven't heard from you yet! We'd love to know if you can join us.</p>
+  <p>We haven't heard from you yet! We'd love to know if you can join us on our special day.</p>
+
+  <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+    <p style="margin: 4px 0; text-align: center;"><strong>Saturday, 23rd May 2026</strong></p>
+    <p style="margin: 4px 0; text-align: center;">Ceremony: 1:00 PM | Reception: 3:30 PM</p>
+  </div>
+
   <p style="text-align: center; margin: 30px 0;">
-    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px;">RSVP Now</a>
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">RSVP Now</a>
   </p>
-  <p style="color: #888; font-size: 14px;">If the button doesn't work, copy this link: {{rsvp_link}}</p>
+  <p style="color: #888; font-size: 14px; text-align: center;">We can't wait to celebrate with you!</p>
 </div>`
     );
     insert.run(
       "itinerary",
       "Event Itinerary",
-      "Your Event Itinerary",
+      "Wedding Day Itinerary - Chris & Candice 💒",
       `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-  <h1 style="text-align: center; color: #2d2d2d;">Event Itinerary</h1>
+  <h1 style="text-align: center; color: #2d2d2d;">Wedding Day Itinerary</h1>
+  <p style="text-align: center; font-size: 18px; color: #666; margin: 10px 0 30px 0;">Saturday, 23rd May 2026</p>
+
   <p>Dear {{guest_name}},</p>
-  <p>Here are the details for our special day:</p>
-  <p><strong>Date:</strong> {{event_date}}</p>
-  <p><strong>Venue:</strong> {{event_venue}}</p>
-  <p><strong>Schedule:</strong></p>
-  {{itinerary_details}}
-  <p>We look forward to celebrating with you!</p>
+  <p>We're so excited to celebrate with you! Here's the full schedule for our special day:</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d; border-bottom: 2px solid #ddd; padding-bottom: 10px;">Ceremony</h3>
+    <p style="margin: 12px 0;"><strong>12:30 PM</strong> - Guest Arrival</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 14px; color: #555;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green<br/>London, N22 5AA</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 13px; color: #777;"><em>Parking around the church is free on Saturdays (please check signs)</em></p>
+
+    <p style="margin: 12px 0;"><strong>1:00 PM</strong> - Ceremony Begins</p>
+    <p style="margin: 12px 0;"><strong>2:30 PM</strong> - Ceremony Ends</p>
+
+    <h3 style="margin: 30px 0 0 0; color: #2d2d2d; border-bottom: 2px solid #ddd; padding-bottom: 10px;">Reception</h3>
+    <p style="margin: 12px 0;"><strong>3:30 PM</strong> - Canapés & Drinks</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 14px; color: #555;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 13px; color: #777;"><em>Plenty of parking available at the venue</em></p>
+
+    <p style="margin: 12px 0;"><strong>5:00 PM</strong> - Bride & Groom Arrival</p>
+    <p style="margin: 12px 0;"><strong>6:00 PM</strong> - Dinner Served</p>
+    <p style="margin: 12px 0;"><strong>7:30 PM</strong> - Cake Cutting</p>
+    <p style="margin: 12px 0;"><strong>8:00 PM</strong> - Speeches</p>
+    <p style="margin: 12px 0;"><strong>9:00 PM</strong> - Dance Floor Opens! 🎉</p>
+    <p style="margin: 12px 0;"><strong>1:00 AM</strong> - Evening Ends</p>
+  </div>
+
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
+  </p>
+
+  <p>We can't wait to celebrate with you!</p>
+  <p style="color: #888; font-size: 14px;">If you have any questions, please don't hesitate to contact us.</p>
 </div>`
     );
     insert.run(
       "confirmation",
       "RSVP Confirmation",
-      "Thanks for your RSVP!",
+      "Thanks for your RSVP! See you soon! 💒",
       `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed</h1>
+  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed! ✓</h1>
   <p>Dear {{guest_name}},</p>
   <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d;">Save the Date</h3>
+    <p style="margin: 8px 0;"><strong>Saturday, 23rd May 2026</strong></p>
+    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong> - 1:00 PM</p>
+    <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
+    <p style="margin: 16px 0 4px 0;"><strong>Reception</strong> - 3:30 PM onwards</p>
+    <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
+  </div>
+
   {{photo_challenges_section}}
+
   <p style="text-align: center; margin: 30px 0;">
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
-  <p>See you soon!</p>
+
+  <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
 </div>`
     );
@@ -213,39 +277,61 @@ function initSchema(db: Database.Database) {
     ).run(
       "confirmation",
       "RSVP Confirmation",
-      "Thanks for your RSVP!",
+      "Thanks for your RSVP! See you soon! 💒",
       `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed</h1>
+  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed! ✓</h1>
   <p>Dear {{guest_name}},</p>
   <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d;">Save the Date</h3>
+    <p style="margin: 8px 0;"><strong>Saturday, 23rd May 2026</strong></p>
+    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong> - 1:00 PM</p>
+    <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
+    <p style="margin: 16px 0 4px 0;"><strong>Reception</strong> - 3:30 PM onwards</p>
+    <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
+  </div>
+
   {{photo_challenges_section}}
+
   <p style="text-align: center; margin: 30px 0;">
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
-  <p>See you soon!</p>
+
+  <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
 </div>`
     );
   } else {
-    // Update existing confirmation template to include RSVP link if it doesn't have it
-    const currentTemplate = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'confirmation'").get() as { body_html: string } | undefined;
-    if (currentTemplate && !currentTemplate.body_html.includes('View Your RSVP')) {
-      db.prepare(
-        "UPDATE email_templates SET body_html = ? WHERE slug = 'confirmation'"
-      ).run(
-        `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed</h1>
+    // Always update to latest confirmation template with full details
+    db.prepare(
+      "UPDATE email_templates SET subject = ?, body_html = ? WHERE slug = 'confirmation'"
+    ).run(
+      "Thanks for your RSVP! See you soon! 💒",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed! ✓</h1>
   <p>Dear {{guest_name}},</p>
   <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d;">Save the Date</h3>
+    <p style="margin: 8px 0;"><strong>Saturday, 23rd May 2026</strong></p>
+    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong> - 1:00 PM</p>
+    <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
+    <p style="margin: 16px 0 4px 0;"><strong>Reception</strong> - 3:30 PM onwards</p>
+    <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
+  </div>
+
   {{photo_challenges_section}}
+
   <p style="text-align: center; margin: 30px 0;">
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
-  <p>See you soon!</p>
+
+  <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
 </div>`
-      );
-    }
+    );
   }
 
   // Migration: seed photo challenge reminder template if missing
@@ -256,19 +342,145 @@ function initSchema(db: Database.Database) {
     ).run(
       "photo_challenge_reminder",
       "Photo Challenge Reminder",
-      "Don't forget your photo challenges!",
+      "Don't forget your photo challenges! 📸",
       `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
   <h1 style="text-align: center; color: #2d2d2d;">📸 Photo Challenge Reminder</h1>
   <p>Dear {{guest_name}},</p>
-  <p>We're so excited to see you at our wedding! Don't forget about your special photo challenges:</p>
+  <p>We're so excited to see you at our wedding on <strong>Saturday, 23rd May 2026</strong>!</p>
+  <p>Don't forget about your special photo challenges:</p>
   {{photo_challenges_section}}
-  <p style="margin-top: 30px;">These photos will help us create lasting memories of our special day. You can upload them at the venue using the QR codes, or via your RSVP link:</p>
+
+  <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+    <p style="margin: 4px 0; font-size: 14px;"><strong>Ceremony:</strong> 1:00 PM at Wood Green New Testament Church of God</p>
+    <p style="margin: 4px 0; font-size: 14px;"><strong>Reception:</strong> 3:30 PM onwards at Loughton Grand Marquee</p>
+  </div>
+
+  <p style="margin-top: 20px;">These photos will help us create lasting memories of our special day. You can upload them at the venue using the QR codes, or via your RSVP link:</p>
   <p style="text-align: center; margin: 20px 0;">
-    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px;">View Your Challenges</a>
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your Challenges</a>
   </p>
   <p>See you soon!</p>
 </div>`
     );
+  }
+
+  // Migration: add category column to photo_challenges if missing
+  const challengeCols = db.prepare("PRAGMA table_info(photo_challenges)").all() as { name: string }[];
+  if (!challengeCols.some((c) => c.name === "category")) {
+    db.exec("ALTER TABLE photo_challenges ADD COLUMN category TEXT");
+  }
+
+  // Seed photo challenges if none exist
+  const challengeCount = db.prepare("SELECT COUNT(*) as c FROM photo_challenges").get() as { c: number };
+  if (challengeCount.c === 0) {
+    const challenges = [
+      // CHURCH / CEREMONY (30 challenges)
+      { text: "Catch the exact moment the bride first appears at the church entrance", category: "CHURCH_CEREMONY" },
+      { text: "Zoom in on the wedding rings as they're being exchanged – get those sparkles!", category: "CHURCH_CEREMONY" },
+      { text: "The first kiss! Capture this magical moment from wherever you're sitting", category: "CHURCH_CEREMONY" },
+      { text: "Catch the groom's face the instant he first sees his bride", category: "CHURCH_CEREMONY" },
+      { text: "Take a photo from your seat showing the full congregation", category: "CHURCH_CEREMONY" },
+      { text: "Snap the cutest moment from the flower girl or ring bearer", category: "CHURCH_CEREMONY" },
+      { text: "Capture the unity candle lighting ceremony", category: "CHURCH_CEREMONY" },
+      { text: "Find someone having a happy cry – tissues and all", category: "CHURCH_CEREMONY" },
+      { text: "Get a shot of the official moment they sign the marriage papers", category: "CHURCH_CEREMONY" },
+      { text: "Capture the newlyweds' triumphant walk back down the aisle", category: "CHURCH_CEREMONY" },
+      { text: "Frame the beautiful stained glass windows or church architecture in your shot", category: "CHURCH_CEREMONY" },
+      { text: "Get an artistic angle of the wedding party at the altar", category: "CHURCH_CEREMONY" },
+      { text: "Photograph the ceremony program or guest book with the church in the background", category: "CHURCH_CEREMONY" },
+      { text: "Capture the emotion during the vow exchange – focus on faces", category: "CHURCH_CEREMONY" },
+      { text: "Take a photo of the church exterior to set the scene", category: "CHURCH_CEREMONY" },
+      { text: "Catch guests arriving – bonus points for fancy hats or stylish outfits", category: "CHURCH_CEREMONY" },
+      { text: "Get an artsy shot of the bridal bouquet during a quiet ceremony moment", category: "CHURCH_CEREMONY" },
+      { text: "Capture a moment of prayer or blessing with bowed heads", category: "CHURCH_CEREMONY" },
+      { text: "Photograph the couple kneeling together at the altar", category: "CHURCH_CEREMONY" },
+      { text: "Catch the bridesmaids or groomsmen reacting to something sweet or funny", category: "CHURCH_CEREMONY" },
+      { text: "The big announcement – \"I now pronounce you...\" Get this moment!", category: "CHURCH_CEREMONY" },
+      { text: "Snap the church bells, decorative details, or special ceremony touches", category: "CHURCH_CEREMONY" },
+      { text: "Capture the joy as guests toss confetti, petals, or bubbles", category: "CHURCH_CEREMONY" },
+      { text: "Get a romantic close-up of the couple's hands clasped together", category: "CHURCH_CEREMONY" },
+      { text: "Take a wide shot showing the full ceremony atmosphere", category: "CHURCH_CEREMONY" },
+      { text: "Capture the officiant speaking – bonus if they're mid-gesture", category: "CHURCH_CEREMONY" },
+      { text: "Catch a stolen glance or sweet moment between the newlyweds", category: "CHURCH_CEREMONY" },
+      { text: "Find a child's priceless reaction during the ceremony", category: "CHURCH_CEREMONY" },
+      { text: "Frame the beautiful aisle decorations – flowers, candles, or ribbons", category: "CHURCH_CEREMONY" },
+      { text: "Catch mom or dad getting emotional during the ceremony", category: "CHURCH_CEREMONY" },
+
+      // VENUE / RECEPTION - Arrival & Social (15 challenges)
+      { text: "Capture the excitement as guests first arrive at the reception", category: "ARRIVAL_SOCIAL" },
+      { text: "Get a creative shot of the welcome sign or venue entrance", category: "ARRIVAL_SOCIAL" },
+      { text: "Photograph the cocktail hour spread – make it look delicious!", category: "ARRIVAL_SOCIAL" },
+      { text: "Catch friends seeing each other for the first time in forever", category: "ARRIVAL_SOCIAL" },
+      { text: "Someone's mid-sip with a signature cocktail – cheers to that!", category: "ARRIVAL_SOCIAL" },
+      { text: "Get artsy with the table centerpieces or venue decorations", category: "ARRIVAL_SOCIAL" },
+      { text: "Capture the cocktail hour vibe – people chatting, laughing, connecting", category: "ARRIVAL_SOCIAL" },
+      { text: "Snap the creative seating chart or place card display", category: "ARRIVAL_SOCIAL" },
+      { text: "Take a fun group selfie with your table or friends", category: "ARRIVAL_SOCIAL" },
+      { text: "Photograph the wedding favors – Chris & Candice's special touch", category: "ARRIVAL_SOCIAL" },
+      { text: "Capture the venue's outdoor beauty – gardens, sunset, or architecture", category: "ARRIVAL_SOCIAL" },
+      { text: "Catch someone adding their message to the guest book", category: "ARRIVAL_SOCIAL" },
+      { text: "Find the photo booth and capture someone being silly", category: "ARRIVAL_SOCIAL" },
+      { text: "Photograph the gift table setup with all the wrapped presents", category: "ARRIVAL_SOCIAL" },
+      { text: "Catch guests' reactions as they take in the stunning venue", category: "ARRIVAL_SOCIAL" },
+
+      // VENUE / RECEPTION - Food & Speeches (15 challenges)
+      { text: "The grand entrance! Capture the newlyweds arriving like celebrities", category: "FOOD_SPEECHES" },
+      { text: "Get a beautiful shot of the head table before everyone sits down", category: "FOOD_SPEECHES" },
+      { text: "Catch someone mid-toast with their glass raised high", category: "FOOD_SPEECHES" },
+      { text: "The wedding cake in all its glory – before the first slice!", category: "FOOD_SPEECHES" },
+      { text: "Capture the cake cutting moment – will they smash or be sweet?", category: "FOOD_SPEECHES" },
+      { text: "Snap your table enjoying the meal together", category: "FOOD_SPEECHES" },
+      { text: "Make the food look Instagram-worthy – get that perfect plate shot", category: "FOOD_SPEECHES" },
+      { text: "Catch someone cracking up during a speech", category: "FOOD_SPEECHES" },
+      { text: "Capture the best man or maid of honor's speech moment", category: "FOOD_SPEECHES" },
+      { text: "The newlyweds' first meal as a married couple – so sweet!", category: "FOOD_SPEECHES" },
+      { text: "Cheers! Capture the tradition of clinking glasses", category: "FOOD_SPEECHES" },
+      { text: "Photograph the dessert spread – make everyone jealous", category: "FOOD_SPEECHES" },
+      { text: "Catch the parents' speech – tissues optional but likely", category: "FOOD_SPEECHES" },
+      { text: "Get Chris & Candice's reaction to something said in a speech", category: "FOOD_SPEECHES" },
+      { text: "Capture the whole dining room atmosphere during dinner service", category: "FOOD_SPEECHES" },
+
+      // VENUE / RECEPTION - Dance Floor (20 challenges)
+      { text: "The first dance! Capture this romantic moment", category: "DANCE_FLOOR" },
+      { text: "Father-daughter dance – get ready for the tears", category: "DANCE_FLOOR" },
+      { text: "Mother-son dance – such a special moment", category: "DANCE_FLOOR" },
+      { text: "Hands up! Catch the energy when everyone's dancing like nobody's watching", category: "DANCE_FLOOR" },
+      { text: "Someone's busting out their best moves – capture the confidence!", category: "DANCE_FLOOR" },
+      { text: "Kids on the dance floor are pure joy – catch them in action", category: "DANCE_FLOOR" },
+      { text: "A packed dance floor means the party's going – get that crowd shot!", category: "DANCE_FLOOR" },
+      { text: "Snap the DJ or band in the zone keeping the party alive", category: "DANCE_FLOOR" },
+      { text: "Everyone's doing the Electric Slide or Cupid Shuffle – capture the chaos!", category: "DANCE_FLOOR" },
+      { text: "Chris & Candice dancing with their wedding party", category: "DANCE_FLOOR" },
+      { text: "Catch someone showing off their fancy footwork", category: "DANCE_FLOOR" },
+      { text: "Shoes off, hair down – catch Candice cutting loose on the dance floor", category: "DANCE_FLOOR" },
+      { text: "A dance circle is forming – get in there and capture the hype!", category: "DANCE_FLOOR" },
+      { text: "Someone belting out the lyrics – catch that passion!", category: "DANCE_FLOOR" },
+      { text: "Grandparents showing the young folks how it's done", category: "DANCE_FLOOR" },
+      { text: "The newlyweds making the rounds dancing with everyone", category: "DANCE_FLOOR" },
+      { text: "Someone's doing the worm or breakdancing – you better catch this!", category: "DANCE_FLOOR" },
+      { text: "Bouquet toss! Who's catching it? Get that action shot", category: "DANCE_FLOOR" },
+      { text: "Garter toss – catch the anticipation and the throw", category: "DANCE_FLOOR" },
+      { text: "The conga line is happening – capture this train of celebration!", category: "DANCE_FLOOR" },
+
+      // VENUE / RECEPTION - Late Night / After-Dark (10 challenges)
+      { text: "The venue transformed by night – capture those magical lights", category: "LATE_NIGHT" },
+      { text: "Sparkler send-off! Get those light trails and smiling faces", category: "LATE_NIGHT" },
+      { text: "The grand exit – capture Chris & Candice leaving in style", category: "LATE_NIGHT" },
+      { text: "A slow song when the floor's less packed – capture the intimacy", category: "LATE_NIGHT" },
+      { text: "Late-night snacks hitting the spot – capture someone's joy", category: "LATE_NIGHT" },
+      { text: "Find the party warriors still going strong at the end", category: "LATE_NIGHT" },
+      { text: "Catch the newlyweds stealing a quiet moment together", category: "LATE_NIGHT" },
+      { text: "The last dance – everyone's tired but still dancing", category: "LATE_NIGHT" },
+      { text: "The beautiful mess – confetti, streamers, or petals covering the floor", category: "LATE_NIGHT" },
+      { text: "The farewell – everyone sending off the happy couple", category: "LATE_NIGHT" },
+    ];
+
+    const insertChallenge = db.prepare(
+      "INSERT INTO photo_challenges (text, category) VALUES (?, ?)"
+    );
+    for (const challenge of challenges) {
+      insertChallenge.run(challenge.text, challenge.category);
+    }
   }
 }
 

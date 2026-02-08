@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { text } = await req.json();
+  const { text, category } = await req.json();
   if (!text || !text.trim()) {
     return NextResponse.json({ error: "Challenge text required" }, { status: 400 });
   }
@@ -39,10 +39,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Validate category if provided
+  const validCategories = ["CHURCH_CEREMONY", "ARRIVAL_SOCIAL", "FOOD_SPEECHES", "DANCE_FLOOR", "LATE_NIGHT"];
+  if (category && !validCategories.includes(category)) {
+    return NextResponse.json(
+      { error: `Invalid category. Must be one of: ${validCategories.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   const db = getDb();
   const result = db
-    .prepare("INSERT INTO photo_challenges (text) VALUES (?)")
-    .run(trimmedText);
+    .prepare("INSERT INTO photo_challenges (text, category) VALUES (?, ?)")
+    .run(trimmedText, category || null);
 
   const challenge = db
     .prepare("SELECT * FROM photo_challenges WHERE id = ?")
@@ -59,7 +68,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, text } = await req.json();
+  const { id, text, category } = await req.json();
   if (!id || !text?.trim()) {
     return NextResponse.json({ error: "ID and text required" }, { status: 400 });
   }
@@ -72,8 +81,21 @@ export async function PUT(req: NextRequest) {
     );
   }
 
+  // Validate category if provided
+  const validCategories = ["CHURCH_CEREMONY", "ARRIVAL_SOCIAL", "FOOD_SPEECHES", "DANCE_FLOOR", "LATE_NIGHT"];
+  if (category !== undefined && category !== null && !validCategories.includes(category)) {
+    return NextResponse.json(
+      { error: `Invalid category. Must be one of: ${validCategories.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   const db = getDb();
-  db.prepare("UPDATE photo_challenges SET text = ? WHERE id = ?").run(trimmedText, id);
+  db.prepare("UPDATE photo_challenges SET text = ?, category = ? WHERE id = ?").run(
+    trimmedText,
+    category !== undefined ? category : null,
+    id
+  );
 
   const challenge = db
     .prepare("SELECT * FROM photo_challenges WHERE id = ?")
