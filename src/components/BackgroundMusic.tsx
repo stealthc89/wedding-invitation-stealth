@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 interface BackgroundMusicProps {
   src: string;
@@ -13,7 +12,6 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const device = useDeviceDetection();
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -97,16 +95,12 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
       {/* Small mute/unmute button only */}
       <button
         onClick={toggleMute}
-        className={`fixed z-50 glass-card rounded-full hover:bg-white/95 active:scale-95 transition-all duration-200 shadow-md ${
-          device.isMobile
-            ? "bottom-4 right-4 p-2"
-            : "bottom-6 right-6 p-2.5"
-        }`}
+        className="fixed bottom-4 right-4 p-2 md:bottom-6 md:right-6 md:p-2.5 z-50 glass-card rounded-full hover:bg-white/95 active:scale-95 transition-all duration-200 shadow-md"
         aria-label={isMuted ? "Unmute music" : "Mute music"}
       >
         {isMuted ? (
           <svg
-            className={`text-gray-700 ${device.isMobile ? "w-3.5 h-3.5" : "w-4 h-4"}`}
+            className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-700"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -126,7 +120,7 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
           </svg>
         ) : (
           <svg
-            className={`text-gray-700 ${device.isMobile ? "w-3.5 h-3.5" : "w-4 h-4"}`}
+            className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-700"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
