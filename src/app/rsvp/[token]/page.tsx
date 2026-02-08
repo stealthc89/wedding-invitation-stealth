@@ -282,7 +282,8 @@ export default function RSVPPage() {
                   type="button"
                   onClick={() => {
                     setAttending(false);
-                    setPlusOneAttending(false);
+                    setPlusOneCount(0);
+                    setPlusOneNames([]);
                   }}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === false
