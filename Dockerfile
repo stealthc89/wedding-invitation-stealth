@@ -27,13 +27,16 @@ RUN apk add --no-cache python3 make g++
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 RUN mkdir -p /app/public/media && chown nextjs:nodejs /app/public/media
+
+# Ensure public directory files are readable
+RUN chmod -R 755 /app/public
 
 USER nextjs
 
