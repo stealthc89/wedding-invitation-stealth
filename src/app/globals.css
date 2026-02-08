@@ -54,14 +54,17 @@ body {
 .slideshow-slide.slideshow-active {
   opacity: 1;
   z-index: 1;
-  /* No zoom animation - smooth static display */
+  /* Subtle Ken Burns zoom effect over 7.5s */
+  animation: kenburns 7.5s ease-out forwards;
 }
 
-/* Exit state: smooth fade out */
+/* Exit state: maintain zoom while fading out to prevent snap-back */
 .slideshow-slide.slideshow-exit {
   opacity: 0;
   transition: opacity 2s ease-in-out;
   z-index: 0;
+  /* Keep the final zoomed state during fade-out */
+  transform: scale(1.08) translateZ(0);
 }
 
 .slideshow-overlay {
@@ -74,9 +77,13 @@ body {
   position: relative;
   z-index: 3;
   min-height: 100vh;
+  max-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem 0;
 }
 
 @keyframes kenburns {

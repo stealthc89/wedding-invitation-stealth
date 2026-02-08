@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import PhotoSlideshow from "@/components/PhotoSlideshow";
+import BackgroundMusic from "@/components/BackgroundMusic";
 
 interface GuestData {
   id: number;
@@ -37,6 +38,8 @@ export default function RSVPPage() {
   const [attending, setAttending] = useState<boolean | null>(null);
   const [plusOneCount, setPlusOneCount] = useState(0);
   const [plusOneNames, setPlusOneNames] = useState<string[]>([]);
+  const [plusOneMealPreferences, setPlusOneMealPreferences] = useState<string[]>([]);
+  const [plusOneDietaryNotes, setPlusOneDietaryNotes] = useState<string[]>([]);
   const [mealPreference, setMealPreference] = useState("no_preference");
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [email, setEmail] = useState("");
@@ -63,6 +66,20 @@ export default function RSVPPage() {
               setPlusOneNames(JSON.parse(data.plus_one_names));
             } catch {
               setPlusOneNames([]);
+            }
+          }
+          if (data.plus_one_meal_preference) {
+            try {
+              setPlusOneMealPreferences(JSON.parse(data.plus_one_meal_preference));
+            } catch {
+              setPlusOneMealPreferences([]);
+            }
+          }
+          if (data.plus_one_dietary_notes) {
+            try {
+              setPlusOneDietaryNotes(JSON.parse(data.plus_one_dietary_notes));
+            } catch {
+              setPlusOneDietaryNotes([]);
             }
           }
           setMealPreference(data.meal_preference || "no_preference");
@@ -102,6 +119,8 @@ export default function RSVPPage() {
           attending,
           plus_one_attending: plusOneCount,
           plus_one_names: attending && plusOneCount > 0 ? JSON.stringify(plusOneNames.slice(0, plusOneCount)) : null,
+          plus_one_meal_preference: attending && plusOneCount > 0 ? JSON.stringify(plusOneMealPreferences.slice(0, plusOneCount)) : null,
+          plus_one_dietary_notes: attending && plusOneCount > 0 ? JSON.stringify(plusOneDietaryNotes.slice(0, plusOneCount)) : null,
           meal_preference: attending ? mealPreference : null,
           dietary_notes: attending ? dietaryNotes : null,
         }),
@@ -143,8 +162,9 @@ export default function RSVPPage() {
   if (!guest) return null;
 
   return (
-    <PhotoSlideshow overlay="dark">
-      <div className="w-full max-w-lg mx-4 my-8">
+    <>
+      <PhotoSlideshow overlay="dark">
+        <div className="w-full max-w-lg mx-4 my-8">
         {/* Header */}
         <div className="text-center mb-8">
           <p className="text-sm uppercase tracking-[0.3em] text-white/60 mb-3">
@@ -188,9 +208,21 @@ export default function RSVPPage() {
                     <strong>Additional guests:</strong> {plusOneCount}
                   </p>
                   {plusOneCount > 0 && plusOneNames.length > 0 && (
-                    <ul className="ml-4 mt-1 text-sm">
+                    <ul className="ml-4 mt-1 text-sm space-y-1">
                       {plusOneNames.map((name, i) => (
-                        <li key={i}>• {name}</li>
+                        <li key={i} className="mb-1">
+                          • {name}
+                          {plusOneMealPreferences[i] && (
+                            <span className="text-xs text-[var(--color-muted)] ml-2">
+                              ({MEAL_OPTIONS.find((m) => m.value === plusOneMealPreferences[i])?.label})
+                            </span>
+                          )}
+                          {plusOneDietaryNotes[i] && plusOneDietaryNotes[i].trim() && (
+                            <div className="ml-4 text-xs text-[var(--color-muted)] mt-0.5">
+                              Dietary: {plusOneDietaryNotes[i]}
+                            </div>
+                          )}
+                        </li>
                       ))}
                     </ul>
                   )}
@@ -284,6 +316,8 @@ export default function RSVPPage() {
                     setAttending(false);
                     setPlusOneCount(0);
                     setPlusOneNames([]);
+                    setPlusOneMealPreferences([]);
+                    setPlusOneDietaryNotes([]);
                   }}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === false
@@ -296,73 +330,14 @@ export default function RSVPPage() {
               </div>
             </div>
 
-            {/* Additional Guests */}
-            {attending && guest.plus_one_allowed > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
-                  How many additional guests are you bringing?
-                </label>
-                <p className="text-xs text-[var(--color-muted)] mb-3">
-                  You may bring up to {guest.plus_one_allowed} additional guest{guest.plus_one_allowed > 1 ? 's' : ''}
-                </p>
-                <div className="flex gap-2 mb-4">
-                  {Array.from({ length: guest.plus_one_allowed + 1 }, (_, i) => i).map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => {
-                        setPlusOneCount(num);
-                        setPlusOneNames(Array(num).fill(''));
-                      }}
-                      className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all font-medium ${
-                        plusOneCount === num
-                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                          : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Names for each additional guest */}
-                {plusOneCount > 0 && (
-                  <div className="space-y-3 bg-gray-50/50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-[var(--color-primary)]">
-                      Please provide the name{plusOneCount > 1 ? 's' : ''} of your additional guest{plusOneCount > 1 ? 's' : ''}:
-                    </p>
-                    {Array.from({ length: plusOneCount }, (_, i) => (
-                      <div key={i}>
-                        <label className="block text-xs text-[var(--color-muted)] mb-1">
-                          Guest {i + 1} <span className="text-red-600">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={plusOneNames[i] || ''}
-                          onChange={(e) => {
-                            const newNames = [...plusOneNames];
-                            newNames[i] = e.target.value;
-                            setPlusOneNames(newNames);
-                          }}
-                          required
-                          placeholder="Full name"
-                          className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Meal Preference */}
+            {/* Primary Guest - Meal Preference */}
             {attending && (
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
-                  Meal preference
+                  Your meal preference
                 </label>
                 <p className="text-xs text-[var(--color-muted)] mb-3">
-                  This is a preference only, not a final selection.
+                  For {guest.name}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {MEAL_OPTIONS.map((option) => (
@@ -383,11 +358,11 @@ export default function RSVPPage() {
               </div>
             )}
 
-            {/* Dietary Notes */}
+            {/* Primary Guest - Dietary Notes */}
             {attending && (
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
-                  Dietary restrictions or special requests
+                  Your dietary restrictions or special requests
                 </label>
                 <p className="text-xs text-[var(--color-muted)] mb-3">
                   Allergies, intolerances, or anything we should know.
@@ -400,6 +375,112 @@ export default function RSVPPage() {
                   placeholder="e.g., nut allergy, gluten-free, halal"
                   className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
                 />
+              </div>
+            )}
+
+            {/* Additional Guests */}
+            {attending && guest.plus_one_allowed > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                  How many additional guests are you bringing?
+                </label>
+                <p className="text-xs text-[var(--color-muted)] mb-3">
+                  You may bring up to {guest.plus_one_allowed} additional guest{guest.plus_one_allowed > 1 ? 's' : ''}
+                </p>
+                <div className="flex gap-2 mb-4">
+                  {Array.from({ length: guest.plus_one_allowed + 1 }, (_, i) => i).map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => {
+                        setPlusOneCount(num);
+                        setPlusOneNames(Array(num).fill(''));
+                        setPlusOneMealPreferences(Array(num).fill('no_preference'));
+                        setPlusOneDietaryNotes(Array(num).fill(''));
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all font-medium ${
+                        plusOneCount === num
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                          : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Names, meal preferences, and dietary notes for each additional guest */}
+                {plusOneCount > 0 && (
+                  <div className="space-y-4 bg-gray-50/50 rounded-lg p-4">
+                    <p className="text-sm font-medium text-[var(--color-primary)]">
+                      Please provide details for your additional guest{plusOneCount > 1 ? 's' : ''}:
+                    </p>
+                    {Array.from({ length: plusOneCount }, (_, i) => (
+                      <div key={i} className="space-y-3 bg-white/50 rounded-lg p-3 border border-gray-200">
+                        <p className="text-xs font-semibold text-[var(--color-primary)]">Guest {i + 1}</p>
+                        <div>
+                          <label className="block text-xs text-[var(--color-muted)] mb-1">
+                            Full name <span className="text-red-600">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={plusOneNames[i] || ''}
+                            onChange={(e) => {
+                              const newNames = [...plusOneNames];
+                              newNames[i] = e.target.value;
+                              setPlusOneNames(newNames);
+                            }}
+                            required
+                            placeholder="Full name"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[var(--color-muted)] mb-2">
+                            Meal preference
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {MEAL_OPTIONS.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  const newPrefs = [...plusOneMealPreferences];
+                                  newPrefs[i] = option.value;
+                                  setPlusOneMealPreferences(newPrefs);
+                                }}
+                                className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
+                                  (plusOneMealPreferences[i] || 'no_preference') === option.value
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                                    : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-[var(--color-muted)] mb-1">
+                            Dietary restrictions or special requests
+                          </label>
+                          <textarea
+                            value={plusOneDietaryNotes[i] || ''}
+                            onChange={(e) => {
+                              const newNotes = [...plusOneDietaryNotes];
+                              newNotes[i] = e.target.value;
+                              setPlusOneDietaryNotes(newNotes);
+                            }}
+                            maxLength={500}
+                            rows={2}
+                            placeholder="e.g., nut allergy, gluten-free, halal"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -427,5 +508,7 @@ export default function RSVPPage() {
         )}
       </div>
     </PhotoSlideshow>
+    <BackgroundMusic src="/audio/its-you-max.mp3" volume={0.7} startTime={0} />
+  </>
   );
 }

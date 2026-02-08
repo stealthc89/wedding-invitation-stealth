@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       (guests as Record<string, unknown>[]).map((g) => ({
         name: g.name,
         email: g.email,
+        phone: g.phone || "",
         plus_one_allowed: g.plus_one_allowed || 0,
         rsvp_status: g.rsvp_status,
         attending: g.attending === 1 ? "yes" : g.attending === 0 ? "no" : "",
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Single guest add
-  const { name, email, plus_one_allowed, is_under_10 } = await req.json();
+  const { name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id } = await req.json();
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
@@ -162,8 +163,8 @@ export async function POST(req: NextRequest) {
 
   try {
     db.prepare(
-      "INSERT INTO guests (token, name, email, plus_one_allowed, is_under_10) VALUES (?, ?, ?, ?, ?)"
-    ).run(token, name, trimmedEmail, plus_one_allowed || 0, is_under_10 ? 1 : 0);
+      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(token, name, trimmedEmail, phone || null, plus_one_allowed || 0, is_under_10 ? 1 : 0, is_plus_one ? 1 : 0, linked_to_guest_id || null);
 
     const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token);
     return NextResponse.json(guest, { status: 201 });
@@ -187,7 +188,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, name, email, plus_one_allowed, is_under_10, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes } =
+  const { id, name, email, phone, plus_one_allowed, plus_one_names, plus_one_meal_preference, is_under_10, is_plus_one, linked_to_guest_id, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes } =
     await req.json();
   if (!id) {
     return NextResponse.json({ error: "Guest ID required" }, { status: 400 });
@@ -212,8 +213,13 @@ export async function PUT(req: NextRequest) {
     `UPDATE guests SET
       name = COALESCE(?, name),
       email = COALESCE(?, email),
+      phone = COALESCE(?, phone),
       plus_one_allowed = COALESCE(?, plus_one_allowed),
+      plus_one_names = COALESCE(?, plus_one_names),
+      plus_one_meal_preference = COALESCE(?, plus_one_meal_preference),
       is_under_10 = COALESCE(?, is_under_10),
+      is_plus_one = COALESCE(?, is_plus_one),
+      linked_to_guest_id = COALESCE(?, linked_to_guest_id),
       rsvp_status = COALESCE(?, rsvp_status),
       attending = COALESCE(?, attending),
       plus_one_attending = COALESCE(?, plus_one_attending),
@@ -221,7 +227,7 @@ export async function PUT(req: NextRequest) {
       dietary_notes = COALESCE(?, dietary_notes),
       updated_at = datetime('now')
     WHERE id = ?`
-  ).run(name, email, validatedPlusOne, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, id);
+  ).run(name, email, phone, validatedPlusOne, plus_one_names, plus_one_meal_preference, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, is_plus_one !== undefined ? (is_plus_one ? 1 : 0) : null, linked_to_guest_id !== undefined ? linked_to_guest_id : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, id);
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

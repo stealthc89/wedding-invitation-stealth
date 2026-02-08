@@ -112,6 +112,31 @@ function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE guests ADD COLUMN is_under_10 INTEGER DEFAULT 0");
   }
 
+  // Migration: add phone column if missing (for guest contact information)
+  if (!cols.some((c) => c.name === "phone")) {
+    db.exec("ALTER TABLE guests ADD COLUMN phone TEXT");
+  }
+
+  // Migration: add plus_one_meal_preference column if missing (for storing meal preferences of plus-ones as JSON array)
+  if (!cols.some((c) => c.name === "plus_one_meal_preference")) {
+    db.exec("ALTER TABLE guests ADD COLUMN plus_one_meal_preference TEXT");
+  }
+
+  // Migration: add plus_one_dietary_notes column if missing (for storing dietary notes of plus-ones as JSON array)
+  if (!cols.some((c) => c.name === "plus_one_dietary_notes")) {
+    db.exec("ALTER TABLE guests ADD COLUMN plus_one_dietary_notes TEXT");
+  }
+
+  // Migration: add is_plus_one column if missing (for tracking companion guests vs primary invitees)
+  if (!cols.some((c) => c.name === "is_plus_one")) {
+    db.exec("ALTER TABLE guests ADD COLUMN is_plus_one INTEGER DEFAULT 0");
+  }
+
+  // Migration: add linked_to_guest_id column if missing (for tracking which primary guest a plus-one is associated with)
+  if (!cols.some((c) => c.name === "linked_to_guest_id")) {
+    db.exec("ALTER TABLE guests ADD COLUMN linked_to_guest_id INTEGER REFERENCES guests(id) ON DELETE SET NULL");
+  }
+
   // Seed default email templates if none exist
   const count = db.prepare("SELECT COUNT(*) as c FROM email_templates").get() as { c: number };
   if (count.c === 0) {
@@ -171,13 +196,16 @@ function initSchema(db: Database.Database) {
   <p>Dear {{guest_name}},</p>
   <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
   {{photo_challenges_section}}
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
+  </p>
   <p>See you soon!</p>
-  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email.</p>
+  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
 </div>`
     );
   }
 
-  // Migration: seed confirmation template if missing (for existing databases)
+  // Migration: seed/update confirmation template (for existing databases)
   const hasConfirmation = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'confirmation'").get();
   if (!hasConfirmation) {
     db.prepare(
@@ -191,8 +219,54 @@ function initSchema(db: Database.Database) {
   <p>Dear {{guest_name}},</p>
   <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
   {{photo_challenges_section}}
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
+  </p>
   <p>See you soon!</p>
-  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email.</p>
+  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
+</div>`
+    );
+  } else {
+    // Update existing confirmation template to include RSVP link if it doesn't have it
+    const currentTemplate = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'confirmation'").get() as { body_html: string } | undefined;
+    if (currentTemplate && !currentTemplate.body_html.includes('View Your RSVP')) {
+      db.prepare(
+        "UPDATE email_templates SET body_html = ? WHERE slug = 'confirmation'"
+      ).run(
+        `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <h1 style="text-align: center; color: #2d2d2d;">RSVP Confirmed</h1>
+  <p>Dear {{guest_name}},</p>
+  <p>Thank you for letting us know! We&rsquo;re so excited to celebrate with you.</p>
+  {{photo_challenges_section}}
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
+  </p>
+  <p>See you soon!</p>
+  <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
+</div>`
+      );
+    }
+  }
+
+  // Migration: seed photo challenge reminder template if missing
+  const hasPhotoChallengeReminder = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'photo_challenge_reminder'").get();
+  if (!hasPhotoChallengeReminder) {
+    db.prepare(
+      "INSERT INTO email_templates (slug, name, subject, body_html) VALUES (?, ?, ?, ?)"
+    ).run(
+      "photo_challenge_reminder",
+      "Photo Challenge Reminder",
+      "Don't forget your photo challenges!",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <h1 style="text-align: center; color: #2d2d2d;">📸 Photo Challenge Reminder</h1>
+  <p>Dear {{guest_name}},</p>
+  <p>We're so excited to see you at our wedding! Don't forget about your special photo challenges:</p>
+  {{photo_challenges_section}}
+  <p style="margin-top: 30px;">These photos will help us create lasting memories of our special day. You can upload them at the venue using the QR codes, or via your RSVP link:</p>
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px;">View Your Challenges</a>
+  </p>
+  <p>See you soon!</p>
 </div>`
     );
   }

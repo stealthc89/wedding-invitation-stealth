@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
   const guest = db
     .prepare(
-      "SELECT id, name, email, plus_one_allowed, plus_one_names, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
+      "SELECT id, name, email, plus_one_allowed, plus_one_names, plus_one_meal_preference, plus_one_dietary_notes, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
     )
     .get(token);
 
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { token, email, attending, plus_one_attending, plus_one_names, meal_preference, dietary_notes } = await req.json();
+    const { token, email, attending, plus_one_attending, plus_one_names, plus_one_meal_preference, plus_one_dietary_notes, meal_preference, dietary_notes } = await req.json();
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
@@ -128,6 +128,8 @@ export async function POST(req: NextRequest) {
       ? Math.min(plusOneCount, Number(guest.plus_one_allowed))
       : 0;
     const finalPlusOneNames = attending && finalPlusOneCount > 0 && plus_one_names ? plus_one_names : null;
+    const finalPlusOneMealPreference = attending && finalPlusOneCount > 0 && plus_one_meal_preference ? plus_one_meal_preference : null;
+    const finalPlusOneDietaryNotes = attending && finalPlusOneCount > 0 && plus_one_dietary_notes ? plus_one_dietary_notes : null;
     const notes = attending && dietary_notes ? String(dietary_notes).slice(0, 500) : null;
 
     // Prevent race condition by checking rsvp_status in the WHERE clause
@@ -138,12 +140,14 @@ export async function POST(req: NextRequest) {
         attending = ?,
         plus_one_attending = ?,
         plus_one_names = ?,
+        plus_one_meal_preference = ?,
+        plus_one_dietary_notes = ?,
         meal_preference = ?,
         dietary_notes = ?,
         responded_at = datetime('now'),
         updated_at = datetime('now')
       WHERE token = ? AND rsvp_status != 'responded'`
-    ).run(email, attending ? 1 : 0, finalPlusOneCount, finalPlusOneNames, meal, notes, token);
+    ).run(email, attending ? 1 : 0, finalPlusOneCount, finalPlusOneNames, finalPlusOneMealPreference, finalPlusOneDietaryNotes, meal, notes, token);
 
     // Check if update was successful (no rows updated means already responded)
     if (result.changes === 0) {
