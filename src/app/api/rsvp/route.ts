@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const db = getDb();
   const guest = db
     .prepare(
-      "SELECT id, name, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
+      "SELECT id, name, email, plus_one_allowed, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, responded_at FROM guests WHERE token = ?"
     )
     .get(token);
 
@@ -41,13 +41,16 @@ export async function GET(req: NextRequest) {
 // POST /api/rsvp — submit RSVP
 export async function POST(req: NextRequest) {
   try {
-    const { token, attending, plus_one_attending, meal_preference, dietary_notes } = await req.json();
+    const { token, email, attending, plus_one_attending, meal_preference, dietary_notes } = await req.json();
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
     }
     if (typeof attending !== "boolean") {
       return NextResponse.json({ error: "Attendance response required" }, { status: 400 });
+    }
+    if (!email || typeof email !== "string" || !email.includes("@")) {
+      return NextResponse.json({ error: "Valid email address required" }, { status: 400 });
     }
 
     const db = getDb();
@@ -91,6 +94,7 @@ export async function POST(req: NextRequest) {
     db.prepare(
       `UPDATE guests SET
         rsvp_status = 'responded',
+        email = ?,
         attending = ?,
         plus_one_attending = ?,
         meal_preference = ?,
@@ -98,27 +102,40 @@ export async function POST(req: NextRequest) {
         responded_at = datetime('now'),
         updated_at = datetime('now')
       WHERE token = ?`
-    ).run(attending ? 1 : 0, plusOne, meal, notes, token);
+    ).run(email, attending ? 1 : 0, plusOne, meal, notes, token);
 
-    // Assign random photo challenges if attending
+    // Assign balanced photo challenges if attending
     let assignedChallenges: string[] = [];
     if (attending) {
+      // Get all challenges with their assignment counts for balanced distribution
       const allChallenges = db
-        .prepare("SELECT id, text FROM photo_challenges")
-        .all() as { id: number; text: string }[];
+        .prepare(`
+          SELECT
+            pc.id,
+            pc.text,
+            COUNT(gc.id) as assignment_count
+          FROM photo_challenges pc
+          LEFT JOIN guest_challenges gc ON pc.id = gc.challenge_id
+          GROUP BY pc.id, pc.text
+          ORDER BY assignment_count ASC, RANDOM()
+        `)
+        .all() as { id: number; text: string; assignment_count: number }[];
 
       if (allChallenges.length > 0) {
-        // Shuffle and pick 2-3
-        const count = Math.min(allChallenges.length, allChallenges.length <= 3 ? allChallenges.length : Math.random() < 0.5 ? 2 : 3);
-        const shuffled = allChallenges.sort(() => Math.random() - 0.5).slice(0, count);
+        // Pick 2-3 challenges (favor least-assigned for symmetrical distribution)
+        const count = Math.min(
+          allChallenges.length,
+          allChallenges.length <= 3 ? allChallenges.length : Math.random() < 0.5 ? 2 : 3
+        );
+        const selected = allChallenges.slice(0, count);
 
         const insertChallenge = db.prepare(
           "INSERT OR IGNORE INTO guest_challenges (guest_id, challenge_id) VALUES (?, ?)"
         );
-        for (const c of shuffled) {
+        for (const c of selected) {
           insertChallenge.run(guest.id, c.id);
         }
-        assignedChallenges = shuffled.map((c) => c.text);
+        assignedChallenges = selected.map((c) => c.text);
       }
     }
 

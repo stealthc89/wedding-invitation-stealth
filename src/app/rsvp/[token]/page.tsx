@@ -7,6 +7,7 @@ import PhotoSlideshow from "@/components/PhotoSlideshow";
 interface GuestData {
   id: number;
   name: string;
+  email: string | null;
   plus_one_allowed: number;
   rsvp_status: string;
   attending: number | null;
@@ -37,6 +38,7 @@ export default function RSVPPage() {
   const [plusOneAttending, setPlusOneAttending] = useState(false);
   const [mealPreference, setMealPreference] = useState("no_preference");
   const [dietaryNotes, setDietaryNotes] = useState("");
+  const [email, setEmail] = useState("");
   const [deadline, setDeadline] = useState<string | null>(null);
   const [challenges, setChallenges] = useState<string[]>([]);
 
@@ -48,6 +50,7 @@ export default function RSVPPage() {
       })
       .then((data) => {
         setGuest(data);
+        setEmail(data.email || "");
         if (data.rsvp_deadline) setDeadline(data.rsvp_deadline);
         if (data.challenges) setChallenges(data.challenges);
         if (data.rsvp_status === "responded") {
@@ -65,14 +68,20 @@ export default function RSVPPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (attending === null) return;
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
 
     setSubmitting(true);
+    setError("");
     try {
       const res = await fetch("/api/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
+          email,
           attending,
           plus_one_attending: plusOneAttending,
           meal_preference: attending ? mealPreference : null,
@@ -145,11 +154,12 @@ export default function RSVPPage() {
         )}
 
         {submitted ? (
-          <div className="glass-card rounded-2xl p-8 text-center">
-            <div className="text-4xl mb-4">{attending ? "🎉" : "💌"}</div>
-            <h2 className="text-2xl text-[var(--color-primary)] mb-3">
-              {attending ? "We can\u2019t wait to see you!" : "We\u2019ll miss you!"}
+          <div className="glass-card rounded-2xl p-8 text-center animate-fade-in">
+            <div className="text-5xl mb-4 animate-bounce-subtle">{attending ? "🎉" : "💌"}</div>
+            <h2 className="text-2xl text-[var(--color-primary)] mb-2 font-semibold">
+              {attending ? "We can't wait to see you!" : "We'll miss you!"}
             </h2>
+            <p className="text-sm text-[var(--color-muted)] mb-4">Your RSVP has been recorded</p>
             <div className="text-[var(--color-muted)] space-y-1 mb-6">
               <p>
                 <strong>Attending:</strong> {attending ? "Yes" : "No"}
@@ -173,18 +183,21 @@ export default function RSVPPage() {
               )}
             </div>
             {attending && challenges.length > 0 && (
-              <div className="border-t border-[var(--color-border)] pt-4 mb-4 text-left">
-                <p className="text-sm font-semibold text-[var(--color-primary)] mb-2">
-                  Your Photo Challenges
+              <div className="border-t border-[var(--color-border)] pt-6 mb-4 text-left bg-gradient-to-br from-purple-50/20 to-pink-50/20 rounded-lg p-4 -mx-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">📸</span>
+                  <p className="text-base font-semibold text-[var(--color-primary)]">
+                    Your Photo Challenges
+                  </p>
+                </div>
+                <p className="text-xs text-[var(--color-muted)] mb-3 leading-relaxed">
+                  Snap these at the wedding! Upload via the QR code at the venue or use the link in your confirmation email.
                 </p>
-                <p className="text-xs text-[var(--color-muted)] mb-2">
-                  Snap these at the wedding and upload them via the QR code at the venue!
-                </p>
-                <ul className="space-y-1">
+                <ul className="space-y-2">
                   {challenges.map((c, i) => (
-                    <li key={i} className="text-sm text-[var(--color-muted)] flex items-start gap-2">
-                      <span className="text-[var(--color-accent)] font-bold">📸</span>
-                      {c}
+                    <li key={i} className="text-sm text-[var(--color-muted)] flex items-start gap-3 bg-white/50 rounded-lg p-2">
+                      <span className="text-[var(--color-accent)] font-bold text-base">✓</span>
+                      <span className="flex-1">{c}</span>
                     </li>
                   ))}
                 </ul>
@@ -197,7 +210,29 @@ export default function RSVPPage() {
         ) : (
           <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-8">
             {error && (
-              <p className="text-[var(--color-error)] text-sm mb-4">{error}</p>
+              <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
+                {error}
+              </div>
+            )}
+
+            {/* Email (required) */}
+            {!guest.email && (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                  Email address <span className="text-red-600">*</span>
+                </label>
+                <p className="text-xs text-[var(--color-muted)] mb-3">
+                  We'll send your confirmation and event details here
+                </p>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="your.email@example.com"
+                  className="w-full px-4 py-3 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-base transition-colors"
+                />
+              </div>
             )}
 
             {/* Attendance */}
@@ -318,11 +353,23 @@ export default function RSVPPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={attending === null || submitting}
-              className="w-full py-3 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 disabled:opacity-40 transition-all shadow-md"
+              disabled={attending === null || submitting || (!guest.email && !email)}
+              className="w-full py-3.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md font-medium text-base"
             >
-              {submitting ? "Submitting..." : "Submit RSVP"}
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⏳</span>
+                  <span>Submitting...</span>
+                </span>
+              ) : (
+                "Submit RSVP"
+              )}
             </button>
+            {attending === null && (
+              <p className="text-xs text-center text-[var(--color-muted)] mt-2">
+                Please select whether you'll be attending above
+              </p>
+            )}
           </form>
         )}
       </div>

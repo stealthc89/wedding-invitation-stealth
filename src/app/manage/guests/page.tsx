@@ -308,7 +308,15 @@ export default function GuestsPage() {
                     <td className="px-4 py-2 font-medium text-gray-800">
                       {g.name}
                     </td>
-                    <td className="px-4 py-2 text-gray-600">{g.email || "—"}</td>
+                    <td className="px-4 py-2">
+                      {g.email ? (
+                        <span className="text-gray-600">{g.email}</span>
+                      ) : (
+                        <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-medium">
+                          No email
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-2">
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
@@ -356,7 +364,9 @@ export default function GuestsPage() {
                       </button>
                       <button
                         onClick={() => resendEmail(g.id)}
-                        className="text-green-700 hover:underline text-xs"
+                        disabled={!g.email}
+                        className="text-green-700 hover:underline text-xs disabled:text-gray-400 disabled:cursor-not-allowed disabled:no-underline"
+                        title={!g.email ? "No email address" : "Send invitation email"}
                       >
                         Email
                       </button>
