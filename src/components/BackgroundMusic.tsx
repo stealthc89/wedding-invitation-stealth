@@ -66,7 +66,7 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
       document.removeEventListener("touchstart", startOnInteraction);
       document.removeEventListener("keydown", startOnInteraction);
     };
-  }, [volume, startTime, isPlaying]);
+  }, [volume, startTime]);
 
   const toggleMute = async () => {
     const audio = audioRef.current;
