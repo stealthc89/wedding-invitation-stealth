@@ -24,10 +24,10 @@ export async function GET(req: NextRequest) {
       (guests as Record<string, unknown>[]).map((g) => ({
         name: g.name,
         email: g.email,
-        plus_one_allowed: g.plus_one_allowed ? "yes" : "no",
+        plus_one_allowed: g.plus_one_allowed || 0,
         rsvp_status: g.rsvp_status,
         attending: g.attending === 1 ? "yes" : g.attending === 0 ? "no" : "",
-        plus_one_attending: g.plus_one_attending ? "yes" : "no",
+        plus_one_attending: g.plus_one_attending || 0,
         meal_preference: g.meal_preference || "",
         dietary_notes: g.dietary_notes || "",
         responded_at: g.responded_at || "",

@@ -34,7 +34,7 @@ export async function GET() {
   ).c;
 
   const totalPlusOnes = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE plus_one_attending = 1").get() as {
+    db.prepare("SELECT COALESCE(SUM(plus_one_attending), 0) as c FROM guests WHERE attending = 1").get() as {
       c: number;
     }
   ).c;
