@@ -1,5 +1,5 @@
 project_id           = "project-ef128af4-2ca3-4e17-837"
-region               = "us-central1"
+region               = "europe-west2"  # London
 image                = "gcr.io/project-ef128af4-2ca3-4e17-837/wedding-rsvp:latest"
 google_client_id     = "966641821373-1jsefscna47nvp28gq0s2oqfa6rk3bbp.apps.googleusercontent.com"
 google_client_secret = "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"
