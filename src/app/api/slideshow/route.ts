@@ -17,6 +17,7 @@ const CURATED_ORDER = [
 
   // City lights and celebration - Singapore nights
   "/media/singapore-marina-bay-sands-professional.jpeg",
+  "/media/singapore-luge-racing-couple.jpeg",
   "/media/istanbul-bridge-night.jpeg",
   "/media/singapore-skyline-upside-down.jpeg",
 

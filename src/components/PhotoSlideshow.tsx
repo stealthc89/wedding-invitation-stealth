@@ -38,7 +38,8 @@ export default function PhotoSlideshow({
   const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
   const [current, setCurrent] = useState(0);
   const [loaded, setLoaded] = useState<Set<number>>(new Set());
-  const [allImagesLoaded, setAllImagesLoaded] = useState(false);
+  const [activePhotos, setActivePhotos] = useState<string[]>([]);
+  const INITIAL_BATCH_SIZE = 6; // Start slideshow after first 6 images
 
   // Fetch slideshow photos dynamically if no explicit photos prop
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function PhotoSlideshow({
 
   const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
 
-  // Preload all images eagerly
+  // Preload images with priority for first batch
   useEffect(() => {
     if (photos.length === 0) return;
 
@@ -66,10 +67,10 @@ export default function PhotoSlideshow({
       if (!loaded.has(index)) {
         const img = new Image();
         img.src = photo;
-        // Eagerly load all images
-        img.loading = "eager";
+        // Eagerly load first batch, lazy load the rest
+        img.loading = index < INITIAL_BATCH_SIZE ? "eager" : "lazy";
         img.decoding = "async";
-        // Prioritize first image for immediate display
+        // High priority for first image
         if (index === 0) {
           img.fetchPriority = "high";
         }
@@ -84,23 +85,32 @@ export default function PhotoSlideshow({
     });
   }, [photos]);
 
-  // Check if all images are loaded
+  // Update active photos as images load (phased approach)
   useEffect(() => {
-    if (photos.length > 0 && loaded.size === photos.length) {
-      setAllImagesLoaded(true);
-    }
-  }, [loaded.size, photos.length]);
+    if (photos.length === 0) return;
 
-  // Start slideshow timer ONLY after all images are loaded
+    const loadedPhotos = photos.filter((_, index) => loaded.has(index));
+
+    // Start with first 6 images once they're loaded
+    if (loadedPhotos.length >= INITIAL_BATCH_SIZE && activePhotos.length === 0) {
+      setActivePhotos(loadedPhotos.slice(0, INITIAL_BATCH_SIZE));
+    }
+    // Add newly loaded images to rotation
+    else if (activePhotos.length > 0 && loadedPhotos.length > activePhotos.length) {
+      setActivePhotos(loadedPhotos);
+    }
+  }, [loaded.size, photos.length, activePhotos.length, photos]);
+
+  // Start slideshow timer once first batch is ready
   useEffect(() => {
-    if (photos.length === 0 || !allImagesLoaded) return;
+    if (activePhotos.length === 0) return;
 
     const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % photos.length);
+      setCurrent((prev) => (prev + 1) % activePhotos.length);
     }, interval);
 
     return () => clearInterval(timer);
-  }, [photos.length, interval, allImagesLoaded]);
+  }, [activePhotos.length, interval]);
 
   const overlayClass =
     overlay === "dark"
@@ -111,7 +121,7 @@ export default function PhotoSlideshow({
 
   return (
     <div className="slideshow-container">
-      {photos.map((photo, i) => (
+      {activePhotos.map((photo, i) => (
         <div
           key={photo}
           className={`slideshow-slide ${i === current ? "slideshow-active" : ""}`}
