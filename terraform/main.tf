@@ -120,6 +120,52 @@ resource "google_storage_bucket" "backups" {
   }
 }
 
+# GCS bucket for media (photos) with CDN
+resource "google_storage_bucket" "media" {
+  name          = "${var.project_id}-wedding-media"
+  location      = var.region
+  force_destroy = false
+
+  uniform_bucket_level_access = true
+
+  # Enable website configuration for direct access
+  website {
+    main_page_suffix = "index.html"
+    not_found_page   = "404.html"
+  }
+
+  # CORS configuration for web access
+  cors {
+    origin          = ["*"]
+    method          = ["GET", "HEAD"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+}
+
+# Make media bucket publicly readable
+resource "google_storage_bucket_iam_member" "media_public" {
+  bucket = google_storage_bucket.media.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
+
+# Backend bucket for Cloud CDN
+resource "google_compute_backend_bucket" "media_backend" {
+  name        = "wedding-media-backend"
+  bucket_name = google_storage_bucket.media.name
+  enable_cdn  = true
+
+  cdn_policy {
+    cache_mode        = "CACHE_ALL_STATIC"
+    client_ttl        = 3600
+    default_ttl       = 3600
+    max_ttl           = 86400
+    negative_caching  = true
+    serve_while_stale = 86400
+  }
+}
+
 # Service account for Cloud Run to access GCS buckets
 resource "google_service_account" "wedding_runner" {
   account_id   = "wedding-rsvp-runner"
@@ -134,6 +180,12 @@ resource "google_storage_bucket_iam_member" "data_access" {
 
 resource "google_storage_bucket_iam_member" "backup_access" {
   bucket = google_storage_bucket.backups.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.wedding_runner.email}"
+}
+
+resource "google_storage_bucket_iam_member" "media_access" {
+  bucket = google_storage_bucket.media.name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.wedding_runner.email}"
 }
@@ -200,6 +252,14 @@ resource "google_cloud_run_v2_service" "wedding" {
       env {
         name  = "BACKUP_BUCKET"
         value = google_storage_bucket.backups.name
+      }
+      env {
+        name  = "MEDIA_BUCKET"
+        value = google_storage_bucket.media.name
+      }
+      env {
+        name  = "MEDIA_CDN_URL"
+        value = "https://storage.googleapis.com/${google_storage_bucket.media.name}"
       }
 
       resources {
@@ -289,4 +349,14 @@ output "data_bucket" {
 output "backup_bucket" {
   description = "GCS bucket for database backups"
   value       = google_storage_bucket.backups.name
+}
+
+output "media_bucket" {
+  description = "GCS bucket for media files (photos)"
+  value       = google_storage_bucket.media.name
+}
+
+output "media_cdn_url" {
+  description = "CDN URL for media files"
+  value       = "https://storage.googleapis.com/${google_storage_bucket.media.name}"
 }

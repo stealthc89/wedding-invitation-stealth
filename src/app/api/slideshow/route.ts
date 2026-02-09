@@ -6,7 +6,12 @@ import getDb from "@/lib/db";
 const MEDIA_DIR = path.join(process.cwd(), "public", "media");
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
+// CDN URL for media files (production) or local path (development)
+const MEDIA_CDN_URL = process.env.MEDIA_CDN_URL || "";
+const USE_CDN = !!MEDIA_CDN_URL;
+
 // Curated slideshow order - tells a romantic love story journey
+// Will be converted to CDN URLs in production
 const CURATED_ORDER = [
   // Start with romantic Venice - elegant, timeless love
   "/media/venice-gondola-romantic-moment.jpeg",
@@ -54,6 +59,14 @@ const CURATED_ORDER = [
   "/media/purple-tunnel-solo.jpeg",
 ];
 
+// Convert local path to CDN URL if CDN is enabled
+function toCdnUrl(localPath: string): string {
+  if (!USE_CDN) return localPath;
+  // Extract filename from /media/filename.jpg
+  const filename = localPath.replace("/media/", "");
+  return `${MEDIA_CDN_URL}/${filename}`;
+}
+
 // GET /api/slideshow — public endpoint, returns photo paths for the slideshow
 export async function GET() {
   const db = getDb();
@@ -67,14 +80,22 @@ export async function GET() {
     try {
       const photos = JSON.parse(setting.value) as string[];
       if (Array.isArray(photos) && photos.length > 0) {
-        return NextResponse.json(photos);
+        // Convert to CDN URLs if enabled
+        const cdnPhotos = photos.map(toCdnUrl);
+        return NextResponse.json(cdnPhotos);
       }
     } catch {
       // Fall through to directory scan
     }
   }
 
-  // Use curated order - only include photos that actually exist
+  // In production with CDN, skip filesystem checks and use curated order directly
+  if (USE_CDN) {
+    const cdnPhotos = CURATED_ORDER.map(toCdnUrl);
+    return NextResponse.json(cdnPhotos);
+  }
+
+  // Development mode: check filesystem
   if (!fs.existsSync(MEDIA_DIR)) {
     return NextResponse.json([]);
   }

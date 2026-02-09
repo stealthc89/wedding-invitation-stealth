@@ -56,12 +56,19 @@ terraform init
 terraform plan -var="deploy_timestamp=$DEPLOY_TIMESTAMP" -out=tfplan
 terraform apply tfplan
 
-# Step 7: Configure public access (IAM binding)
+# Step 7: Upload media files to GCS bucket with CDN
+echo ""
+echo "7️⃣  Uploading media files to GCS bucket..."
+./upload-media.sh || {
+  echo "⚠️  Media upload failed, but continuing deployment..."
+}
+
+# Step 8: Configure public access (IAM binding)
 # Note: This step may fail if you don't have run.services.setIamPolicy permission.
 # If it fails, the service can be made public manually via:
 # gcloud run services add-iam-policy-binding wedding-rsvp --region=europe-west1 --member="allUsers" --role="roles/run.invoker"
 echo ""
-echo "7️⃣  Configuring public access to Cloud Run service..."
+echo "8️⃣  Configuring public access to Cloud Run service..."
 cd ..
 IAM_RESULT=$(gcloud run services add-iam-policy-binding wedding-rsvp \
   --region=$REGION \
@@ -79,9 +86,9 @@ else
   echo "   ⚠️  IAM binding may have failed, but continuing..."
 fi
 
-# Step 8: Get service URL
+# Step 9: Get service URL
 echo ""
-echo "8️⃣  Getting Cloud Run service URL..."
+echo "9️⃣  Getting Cloud Run service URL..."
 SERVICE_URL=$(terraform -chdir=terraform output -raw service_url 2>/dev/null)
 
 if [ -z "$SERVICE_URL" ]; then
@@ -96,8 +103,8 @@ echo ""
 echo "🌐 Service URL: $SERVICE_URL"
 echo ""
 
-# Step 9: OAuth redirect (one-time setup)
-echo "9️⃣  OAuth Redirect URL (one-time setup)..."
+# Step 10: OAuth redirect (one-time setup)
+echo "🔟 OAuth Redirect URL (one-time setup)..."
 echo ""
 echo "📋 Your fixed OAuth redirect URL:"
 echo "   https://celebratingcc.com/api/auth/google/callback"
@@ -111,9 +118,9 @@ echo "   2. Add to 'Authorized redirect URIs': https://celebratingcc.com/api/aut
 echo "   3. Click 'Save'"
 echo ""
 
-# Step 10: Domain Mapping (idempotent)
+# Step 11: Domain Mapping (idempotent)
 echo ""
-echo "🔟 Configuring domain mapping..."
+echo "1️⃣1️⃣ Configuring domain mapping..."
 DOMAIN="celebratingcc.com"
 DOMAIN_EXISTS=$(gcloud beta run domain-mappings describe $DOMAIN --region=$REGION --project=$PROJECT_ID 2>/dev/null && echo "yes" || echo "no")
 
@@ -133,9 +140,9 @@ else
   echo "   ✅ Domain mapping already exists"
 fi
 
-# Step 11: Configure DNS (idempotent)
+# Step 12: Configure DNS (idempotent)
 echo ""
-echo "1️⃣1️⃣ Configuring DNS records..."
+echo "1️⃣2️⃣ Configuring DNS records..."
 DNS_ZONE="celebratingcc-com"
 DNS_NAME="$DOMAIN."
 
