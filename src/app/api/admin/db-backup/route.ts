@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     const backups = files
       .map((file) => ({
         name: file.name,
-        size: parseInt(file.metadata.size || "0"),
+        size: typeof file.metadata.size === "number" ? file.metadata.size : parseInt(file.metadata.size || "0"),
         created: file.metadata.timeCreated,
         type: file.metadata.metadata?.type || "manual",
       }))
