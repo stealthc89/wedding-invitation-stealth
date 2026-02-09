@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
       .map((file) => ({
         name: file.name,
         size: typeof file.metadata.size === "number" ? file.metadata.size : parseInt(file.metadata.size || "0"),
-        created: file.metadata.timeCreated,
+        created: file.metadata.timeCreated || new Date().toISOString(),
         type: file.metadata.metadata?.type || "manual",
       }))
       .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
