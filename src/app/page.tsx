@@ -2,7 +2,7 @@
 
 import PhotoSlideshow from "@/components/PhotoSlideshow";
 import BackgroundMusic from "@/components/BackgroundMusic";
-import MonogramLogo from "@/components/MonogramLogo";
+import BrandLogo from "@/components/BrandLogo";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -40,24 +40,24 @@ export default function Home() {
     <>
       <PhotoSlideshow overlay="dark">
         <div className="text-center px-4 py-8 max-w-2xl mx-auto min-h-screen flex flex-col justify-center">
-          {/* Monogram Logo */}
+          {/* Brand Logo */}
           <div className="flex justify-center mb-4">
-            <MonogramLogo className="w-20 h-20 sm:w-24 sm:h-24 text-white" />
+            <BrandLogo className="w-28 h-20 sm:w-36 sm:h-24 text-white" />
           </div>
 
-          <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-white/60 mb-2">
+          <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-white/80 mb-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
             Together with their families
           </p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-white mb-2 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-white mb-3 leading-tight" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
             Chris & Candice
           </h1>
-          <div className="w-12 h-px bg-white/30 mx-auto my-3" />
-          <p className="text-sm sm:text-base text-white/70 mb-4">
-            Request the pleasure of your company
+          <p className="text-sm sm:text-base text-white/90 mb-2" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+            invite you to celebrate their wedding
           </p>
+          <div className="w-12 h-px bg-white/40 mx-auto my-3" />
 
           {/* Wedding Date */}
-          <p className="text-xl sm:text-2xl font-light text-white mb-6">
+          <p className="text-xl sm:text-2xl font-light text-white mb-6" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.7)' }}>
             Saturday, 23rd May 2026
           </p>
 
@@ -65,11 +65,11 @@ export default function Home() {
           <div className="mb-3">
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="glass-card rounded-lg px-4 py-2.5 text-white hover:bg-white/10 transition-all w-full flex items-center justify-between"
+              className="glass-card rounded-lg px-5 py-3.5 text-white hover:bg-black/50 transition-all duration-700 ease-out w-full flex items-center justify-between shadow-lg hover:shadow-2xl"
             >
-              <span className="text-sm font-medium">Venue Details</span>
+              <span className="text-sm font-medium tracking-wide">Venue Details</span>
               <svg
-                className={`w-4 h-4 transition-transform ${showDetails ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-all duration-700 ease-out ${showDetails ? 'rotate-180 scale-110' : 'scale-100'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -78,18 +78,18 @@ export default function Home() {
               </svg>
             </button>
             {showDetails && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <div className="glass-card rounded-lg p-4 text-white text-left">
-                  <h3 className="text-sm font-semibold mb-2">Ceremony</h3>
-                  <p className="text-xs text-white/80 mb-1">Wood Green New Testament Church of God</p>
-                  <p className="text-[10px] text-white/60 mb-2">Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
-                  <p className="text-xs font-medium text-white/80">Arrive: 12:30 PM | Ceremony: 1:00 PM</p>
+              <div className="dropdown-content grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                <div className="glass-card rounded-xl p-5 text-white text-left shadow-xl">
+                  <h3 className="text-base font-semibold mb-3 tracking-wide">Ceremony</h3>
+                  <p className="text-sm text-white/95 mb-2 leading-relaxed">Wood Green New Testament Church of God</p>
+                  <p className="text-xs text-white/75 mb-3 leading-relaxed">Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
+                  <p className="text-sm font-medium text-white/95 pt-2 border-t border-white/20">Arrive: 12:30 PM | Ceremony: 1:00 PM</p>
                 </div>
-                <div className="glass-card rounded-lg p-4 text-white text-left">
-                  <h3 className="text-sm font-semibold mb-2">Reception</h3>
-                  <p className="text-xs text-white/80 mb-1">Loughton Grand Marquee</p>
-                  <p className="text-[10px] text-white/60 mb-2">Langston Road, Loughton, IG10 3TG</p>
-                  <p className="text-xs font-medium text-white/80">Canapés & Drinks: 3:30 PM onwards</p>
+                <div className="glass-card rounded-xl p-5 text-white text-left shadow-xl">
+                  <h3 className="text-base font-semibold mb-3 tracking-wide">Reception</h3>
+                  <p className="text-sm text-white/95 mb-2 leading-relaxed">Loughton Grand Marquee</p>
+                  <p className="text-xs text-white/75 mb-3 leading-relaxed">Langston Road, Loughton, IG10 3TG</p>
+                  <p className="text-sm font-medium text-white/95 pt-2 border-t border-white/20">Canapés & Drinks: 3:30 PM onwards</p>
                 </div>
               </div>
             )}
@@ -99,11 +99,11 @@ export default function Home() {
           <div className="mb-6">
             <button
               onClick={() => setShowItinerary(!showItinerary)}
-              className="glass-card rounded-lg px-4 py-2.5 text-white hover:bg-white/10 transition-all w-full flex items-center justify-between"
+              className="glass-card rounded-lg px-5 py-3.5 text-white hover:bg-black/50 transition-all duration-700 ease-out w-full flex items-center justify-between shadow-lg hover:shadow-2xl"
             >
-              <span className="text-sm font-medium">Full Itinerary</span>
+              <span className="text-sm font-medium tracking-wide">Full Itinerary</span>
               <svg
-                className={`w-4 h-4 transition-transform ${showItinerary ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 transition-all duration-700 ease-out ${showItinerary ? 'rotate-180 scale-110' : 'scale-100'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -112,27 +112,26 @@ export default function Home() {
               </svg>
             </button>
             {showItinerary && (
-              <div className="glass-card rounded-lg p-4 text-white mt-3">
-                <div className="space-y-4 text-left">
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-white/90">Ceremony</h4>
-                    <div className="space-y-1 text-xs">
-                      <p><span className="font-medium text-white/70">12:30 PM</span> - Guest Arrival</p>
-                      <p><span className="font-medium text-white/70">1:00 PM</span> - Ceremony Begins</p>
-                      <p><span className="font-medium text-white/70">2:30 PM</span> - Ceremony Ends</p>
+              <div className="dropdown-content glass-card rounded-xl p-6 text-white mt-4 shadow-xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="text-left">
+                    <h4 className="text-base font-semibold mb-4 text-white border-b border-white/30 pb-3 tracking-wide">Ceremony</h4>
+                    <div className="space-y-2.5 text-sm">
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">12:30 PM</span><span className="text-white/90">Guest Arrival</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">1:00 PM</span><span className="text-white/90">Ceremony Begins</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">2:30 PM</span><span className="text-white/90">Ceremony Ends</span></p>
                     </div>
                   </div>
-                  <div className="w-full h-px bg-white/20" />
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 text-white/90">Reception</h4>
-                    <div className="space-y-1 text-xs">
-                      <p><span className="font-medium text-white/70">3:30 PM</span> - Canapés & Drinks</p>
-                      <p><span className="font-medium text-white/70">5:00 PM</span> - Bride & Groom Arrival</p>
-                      <p><span className="font-medium text-white/70">6:00 PM</span> - Dinner Served</p>
-                      <p><span className="font-medium text-white/70">7:30 PM</span> - Cake Cutting</p>
-                      <p><span className="font-medium text-white/70">8:00 PM</span> - Speeches</p>
-                      <p><span className="font-medium text-white/70">9:00 PM</span> - Dance Floor Opens</p>
-                      <p><span className="font-medium text-white/70">1:00 AM</span> - Evening Ends</p>
+                  <div className="text-left">
+                    <h4 className="text-base font-semibold mb-4 text-white border-b border-white/30 pb-3 tracking-wide">Reception</h4>
+                    <div className="space-y-2.5 text-sm">
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">3:30 PM</span><span className="text-white/90">Canapés & Drinks</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">5:00 PM</span><span className="text-white/90">Bride & Groom Arrival</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">6:00 PM</span><span className="text-white/90">Dinner Served</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">7:30 PM</span><span className="text-white/90">Cake Cutting</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">8:00 PM</span><span className="text-white/90">Speeches</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">9:00 PM</span><span className="text-white/90">Dance Floor Opens</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">1:00 AM</span><span className="text-white/90">Evening Ends</span></p>
                     </div>
                   </div>
                 </div>
@@ -142,22 +141,22 @@ export default function Home() {
 
           {/* RSVP Form - compact */}
           <div className="max-w-xs mx-auto w-full">
-            <form onSubmit={handleSubmit} className="glass-card rounded-lg p-3">
-              <p className="text-xs text-white/60 mb-2">Enter your invite code to RSVP:</p>
+            <form onSubmit={handleSubmit} className="glass-card rounded-lg p-4">
+              <p className="text-sm text-white/90 mb-3">Enter your invite code to RSVP:</p>
               <div className="space-y-2">
                 <input
                   type="text"
                   value={guestId}
                   onChange={(e) => setGuestId(e.target.value)}
                   placeholder="Invite code"
-                  className="w-full px-3 py-1.5 rounded border border-gray-300 focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 outline-none transition-all text-center text-xs"
+                  className="w-full px-3 py-2 rounded border border-gray-300 focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 outline-none transition-all text-center text-sm"
                 />
                 {error && (
-                  <p className="text-xs text-red-400">{error}</p>
+                  <p className="text-sm text-red-400">{error}</p>
                 )}
                 <button
                   type="submit"
-                  className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white text-xs py-1.5 px-4 rounded transition-colors duration-200"
+                  className="w-full bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white text-sm py-2 px-4 rounded transition-colors duration-200"
                 >
                   RSVP
                 </button>

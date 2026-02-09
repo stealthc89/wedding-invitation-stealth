@@ -212,11 +212,11 @@ export default function RSVPPage() {
         {submitted ? (
           <div className="glass-card rounded-2xl p-8 text-center animate-fade-in">
             <div className="text-5xl mb-4 animate-bounce-subtle">{attending ? "🎉" : "💌"}</div>
-            <h2 className="text-2xl text-[var(--color-primary)] mb-2 font-semibold">
+            <h2 className="text-2xl text-white mb-2 font-semibold">
               {attending ? "We can't wait to see you!" : "We'll miss you!"}
             </h2>
-            <p className="text-sm text-[var(--color-muted)] mb-4">Your RSVP has been recorded</p>
-            <div className="text-[var(--color-muted)] space-y-1 mb-6">
+            <p className="text-sm text-white/70 mb-4">Your RSVP has been recorded</p>
+            <div className="text-white space-y-1 mb-6">
               <p>
                 <strong>Attending:</strong> {attending ? "Yes" : "No"}
               </p>
@@ -231,12 +231,12 @@ export default function RSVPPage() {
                         <li key={i} className="mb-1">
                           • {name}
                           {plusOneMealPreferences[i] && (
-                            <span className="text-xs text-[var(--color-muted)] ml-2">
+                            <span className="text-xs text-white/70 ml-2">
                               ({MEAL_OPTIONS.find((m) => m.value === plusOneMealPreferences[i])?.label})
                             </span>
                           )}
                           {plusOneDietaryNotes[i] && plusOneDietaryNotes[i].trim() && (
-                            <div className="ml-4 text-xs text-[var(--color-muted)] mt-0.5">
+                            <div className="ml-4 text-xs text-white/70 mt-0.5">
                               Dietary: {plusOneDietaryNotes[i]}
                             </div>
                           )}
@@ -258,35 +258,14 @@ export default function RSVPPage() {
                 </p>
               )}
             </div>
-            {attending && challenges.length > 0 && (
-              <div className="border-t border-[var(--color-border)] pt-6 mb-4 text-left bg-gradient-to-br from-purple-50/20 to-pink-50/20 rounded-lg p-4 -mx-2">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl">📸</span>
-                  <p className="text-base font-semibold text-[var(--color-primary)]">
-                    Your Photo Challenges
-                  </p>
-                </div>
-                <p className="text-xs text-[var(--color-muted)] mb-3 leading-relaxed">
-                  Snap these at the wedding! Upload via the QR code at the venue or use the link in your confirmation email.
-                </p>
-                <ul className="space-y-2">
-                  {challenges.map((c, i) => (
-                    <li key={i} className="text-sm text-[var(--color-muted)] flex items-start gap-3 bg-white/50 rounded-lg p-2">
-                      <span className="text-[var(--color-accent)] font-bold text-base">✓</span>
-                      <span className="flex-1">{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-sm text-[var(--color-muted)] border-t border-[var(--color-border)] pt-4">
+            <p className="text-sm text-white/70 border-t border-white/20 pt-4">
               If you need to make changes, please contact the bride or groom.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-8">
             {error && (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-200 p-3 rounded-lg mb-4">
+              <div className="text-sm text-red-200 bg-red-900/50 border border-red-700 p-3 rounded-lg mb-4">
                 {error}
               </div>
             )}
@@ -294,10 +273,10 @@ export default function RSVPPage() {
             {/* Email (required) */}
             {!guest.email && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
-                  Email address <span className="text-red-600">*</span>
+                <label className="block text-sm font-semibold text-white mb-1">
+                  Email address <span className="text-red-400">*</span>
                 </label>
-                <p className="text-xs text-[var(--color-muted)] mb-3">
+                <p className="text-xs text-white/70 mb-3">
                   We'll send your confirmation and event details here
                 </p>
                 <input
@@ -306,14 +285,14 @@ export default function RSVPPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="your.email@example.com"
-                  className="w-full px-4 py-3 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-base transition-colors"
+                  className="w-full px-4 py-3 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-base transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
             )}
 
             {/* Attendance */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-[var(--color-primary)] mb-3">
+              <label className="block text-sm font-semibold text-white mb-3">
                 Will you be attending?
               </label>
               <div className="flex gap-3">
@@ -323,7 +302,7 @@ export default function RSVPPage() {
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === true
                       ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                      : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                      : "border-white/40 hover:border-[var(--color-accent)] text-white"
                   }`}
                 >
                   Joyfully Accept
@@ -340,7 +319,7 @@ export default function RSVPPage() {
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === false
                       ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                      : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                      : "border-white/40 hover:border-[var(--color-accent)] text-white"
                   }`}
                 >
                   Regretfully Decline
@@ -351,10 +330,10 @@ export default function RSVPPage() {
             {/* Primary Guest - Meal Preference */}
             {attending && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                <label className="block text-sm font-semibold text-white mb-1">
                   Your meal preference
                 </label>
-                <p className="text-xs text-[var(--color-muted)] mb-3">
+                <p className="text-xs text-white/70 mb-3">
                   For {guest.name}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -366,7 +345,7 @@ export default function RSVPPage() {
                       className={`py-2.5 px-3 rounded-lg border-2 text-sm transition-all ${
                         mealPreference === option.value
                           ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                          : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                          : "border-white/40 hover:border-[var(--color-accent)] text-white"
                       }`}
                     >
                       {option.label}
@@ -379,10 +358,10 @@ export default function RSVPPage() {
             {/* Primary Guest - Dietary Notes */}
             {attending && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                <label className="block text-sm font-semibold text-white mb-1">
                   Your dietary restrictions or special requests
                 </label>
-                <p className="text-xs text-[var(--color-muted)] mb-3">
+                <p className="text-xs text-white/70 mb-3">
                   Allergies, intolerances, or anything we should know.
                 </p>
                 <textarea
@@ -391,7 +370,7 @@ export default function RSVPPage() {
                   maxLength={500}
                   rows={3}
                   placeholder="e.g., nut allergy, gluten-free, halal"
-                  className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
                 />
               </div>
             )}
@@ -399,10 +378,10 @@ export default function RSVPPage() {
             {/* Additional Guests */}
             {attending && guest.plus_one_allowed > 0 && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-[var(--color-primary)] mb-1">
+                <label className="block text-sm font-semibold text-white mb-1">
                   How many additional guests are you bringing?
                 </label>
-                <p className="text-xs text-[var(--color-muted)] mb-3">
+                <p className="text-xs text-white/70 mb-3">
                   You may bring up to {guest.plus_one_allowed} additional guest{guest.plus_one_allowed > 1 ? 's' : ''}
                 </p>
                 <div className="flex gap-2 mb-4">
@@ -419,7 +398,7 @@ export default function RSVPPage() {
                       className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all font-medium ${
                         plusOneCount === num
                           ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                          : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                          : "border-white/40 hover:border-[var(--color-accent)] text-white"
                       }`}
                     >
                       {num}
@@ -429,16 +408,16 @@ export default function RSVPPage() {
 
                 {/* Names, meal preferences, and dietary notes for each additional guest */}
                 {plusOneCount > 0 && (
-                  <div className="space-y-4 bg-gray-50/50 rounded-lg p-4">
-                    <p className="text-sm font-medium text-[var(--color-primary)]">
+                  <div className="space-y-4 bg-white/10 rounded-lg p-4">
+                    <p className="text-sm font-medium text-white">
                       Please provide details for your additional guest{plusOneCount > 1 ? 's' : ''}:
                     </p>
                     {Array.from({ length: plusOneCount }, (_, i) => (
-                      <div key={i} className="space-y-3 bg-white/50 rounded-lg p-3 border border-gray-200">
-                        <p className="text-xs font-semibold text-[var(--color-primary)]">Guest {i + 1}</p>
+                      <div key={i} className="space-y-3 bg-white/5 rounded-lg p-3 border border-white/20">
+                        <p className="text-xs font-semibold text-white">Guest {i + 1}</p>
                         <div>
-                          <label className="block text-xs text-[var(--color-muted)] mb-1">
-                            Full name <span className="text-red-600">*</span>
+                          <label className="block text-xs text-white/70 mb-1">
+                            Full name <span className="text-red-400">*</span>
                           </label>
                           <input
                             type="text"
@@ -450,11 +429,11 @@ export default function RSVPPage() {
                             }}
                             required
                             placeholder="Full name"
-                            className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs text-[var(--color-muted)] mb-2">
+                          <label className="block text-xs text-white/70 mb-2">
                             Meal preference
                           </label>
                           <div className="grid grid-cols-2 gap-2">
@@ -470,7 +449,7 @@ export default function RSVPPage() {
                                 className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
                                   (plusOneMealPreferences[i] || 'no_preference') === option.value
                                     ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                                    : "border-[var(--color-border)] hover:border-[var(--color-accent)]"
+                                    : "border-white/40 hover:border-[var(--color-accent)] text-white"
                                 }`}
                               >
                                 {option.label}
@@ -479,7 +458,7 @@ export default function RSVPPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs text-[var(--color-muted)] mb-1">
+                          <label className="block text-xs text-white/70 mb-1">
                             Dietary restrictions or special requests
                           </label>
                           <textarea
@@ -492,7 +471,7 @@ export default function RSVPPage() {
                             maxLength={500}
                             rows={2}
                             placeholder="e.g., nut allergy, gluten-free, halal"
-                            className="w-full px-3 py-2 rounded-lg border-2 border-[var(--color-border)] focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
                           />
                         </div>
                       </div>
@@ -518,7 +497,7 @@ export default function RSVPPage() {
               )}
             </button>
             {attending === null && (
-              <p className="text-xs text-center text-[var(--color-muted)] mt-2">
+              <p className="text-xs text-center text-white/70 mt-2">
                 Please select whether you'll be attending above
               </p>
             )}
