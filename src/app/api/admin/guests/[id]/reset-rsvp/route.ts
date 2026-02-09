@@ -6,7 +6,7 @@ import { logAdminAction } from "@/lib/audit-log";
 // POST /api/admin/guests/[id]/reset-rsvp — reset guest RSVP to allow re-submission
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let session;
   try {
@@ -15,7 +15,8 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const id = parseInt(params.id);
+  const { id: idParam } = await params;
+  const id = parseInt(idParam);
   if (isNaN(id)) {
     return NextResponse.json({ error: "Invalid guest ID" }, { status: 400 });
   }
