@@ -84,7 +84,7 @@ export default function BackgroundMusic({ src, volume = 0.7, startTime = 0 }: Ba
 
   return (
     <>
-      <audio ref={audioRef} loop preload="auto">
+      <audio ref={audioRef} loop preload="metadata">
         <source src={src} type="audio/mpeg" />
         <source src={src.replace('.mp3', '.aac')} type="audio/aac" />
         <source src={src.replace('.mp3', '.ogg')} type="audio/ogg" />
