@@ -33,38 +33,48 @@ body {
 .slideshow-slide {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   opacity: 0;
   transform: scale(1) translateZ(0);
-  /* Smooth crossfade transition between photos */
-  transition: opacity 2s ease-in-out;
-  will-change: opacity;
-  /* High quality image rendering */
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
+  will-change: opacity, transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* GPU acceleration for smoother animations */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Image element inside slide - replaces background-image for better browser optimization */
+.slideshow-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
 }
 
 .slideshow-slide.slideshow-active {
   opacity: 1;
   z-index: 1;
-  /* Subtle Ken Burns zoom effect over 7.5s */
-  animation: kenburns 7.5s ease-out forwards;
+  /* Smooth fade-in */
+  animation: slideIn 2s ease-in-out forwards, kenburns 7.5s ease-out forwards;
 }
 
 /* Exit state: maintain zoom while fading out to prevent snap-back */
 .slideshow-slide.slideshow-exit {
   opacity: 0;
-  transition: opacity 2s ease-in-out;
   z-index: 0;
+  animation: slideOut 2s ease-in-out forwards;
   /* Keep the final zoomed state during fade-out */
   transform: scale(1.08) translateZ(0);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .slideshow-overlay {

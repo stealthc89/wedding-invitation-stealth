@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // Fallback photos if API returns empty and no photos prop is given
-// High-quality images representing the couple's romantic journey
 const FALLBACK_PHOTOS = [
   "/media/venice-gondola-romantic-moment.jpeg",
   "/media/venice-basilica-couple-kiss.jpeg",
@@ -12,15 +11,6 @@ const FALLBACK_PHOTOS = [
   "/media/egypt-pyramids-camels-couple.jpeg",
   "/media/snow-mountains-sunset-cuddle.jpeg",
   "/media/scuba-diving-couple-underwater-heart.jpeg",
-];
-
-// Each slide gets a different zoom origin for variety
-const ZOOM_ORIGINS = [
-  "center center",
-  "top center",
-  "center right",
-  "bottom center",
-  "center left",
 ];
 
 interface PhotoSlideshowProps {
@@ -32,131 +22,92 @@ interface PhotoSlideshowProps {
 
 export default function PhotoSlideshow({
   photos: photosProp,
-  interval = 8000, // 8s interval (7s animation + 1s buffer)
+  interval = 8000,
   overlay = "dark",
   children,
 }: PhotoSlideshowProps) {
-  const [dynamicPhotos, setDynamicPhotos] = useState<string[] | null>(null);
-  const [current, setCurrent] = useState(-1); // Start at -1 to trigger fade-in
+  const [photos, setPhotos] = useState<string[]>(photosProp || FALLBACK_PHOTOS);
+  const [current, setCurrent] = useState(0);
   const [previous, setPrevious] = useState<number | null>(null);
-  const [loaded, setLoaded] = useState<Set<number>>(new Set());
-  const [activePhotos, setActivePhotos] = useState<string[]>([]);
-  const INITIAL_BATCH_SIZE = 6; // Start slideshow after first 6 images
-  const imageObjectsRef = useRef<Map<number, HTMLImageElement>>(new Map());
+  const [firstLoaded, setFirstLoaded] = useState(false);
+  const loadedRef = useRef<Set<number>>(new Set());
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch slideshow photos dynamically if no explicit photos prop
   useEffect(() => {
-    if (photosProp) return; // Skip if caller provided photos
+    if (photosProp) return;
 
     fetch("/api/slideshow")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setDynamicPhotos(data);
-        } else {
-          setDynamicPhotos(FALLBACK_PHOTOS);
+          setPhotos(data);
         }
       })
-      .catch(() => setDynamicPhotos(FALLBACK_PHOTOS));
+      .catch(() => {
+        // Keep fallback photos
+      });
   }, [photosProp]);
 
-  const photos = photosProp || dynamicPhotos || FALLBACK_PHOTOS;
+  // Preload a specific image by index, returns a promise
+  const preloadImage = useCallback(
+    (index: number): Promise<void> => {
+      if (loadedRef.current.has(index) || index < 0 || index >= photos.length) {
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          loadedRef.current.add(index);
+          resolve();
+        };
+        img.onerror = () => resolve(); // Don't block on errors
+        img.src = photos[index];
+      });
+    },
+    [photos]
+  );
 
-  // Initialize activePhotos with first image only after it's actually loaded
-  // Use a small delay to ensure smooth fade-in transition
-  useEffect(() => {
-    if (activePhotos.length === 0 && photos.length > 0 && loaded.has(0)) {
-      // Add photo to DOM first
-      setActivePhotos([photos[0]]);
-      // Then trigger fade-in after a tiny delay
-      setTimeout(() => {
-        setCurrent(0);
-      }, 20);
-    }
-  }, [photos, activePhotos.length, loaded.size]);
-
-  // Preload images with priority for first batch
+  // Preload first image immediately, then start slideshow
   useEffect(() => {
     if (photos.length === 0) return;
 
-    photos.forEach((photo, index) => {
-      if (!loaded.has(index) && !imageObjectsRef.current.has(index)) {
-        const img = new Image();
-        img.src = photo;
-        // Eagerly load first batch, lazy load the rest
-        img.loading = index < INITIAL_BATCH_SIZE ? "eager" : "lazy";
-        img.decoding = "async";
-        // High priority for first image
-        if (index === 0) {
-          img.fetchPriority = "high";
-        }
-        img.onload = () => {
-          setLoaded((prev) => {
-            const newSet = new Set(prev);
-            newSet.add(index);
-            return newSet;
-          });
-        };
-        // Store reference for cleanup
-        imageObjectsRef.current.set(index, img);
+    // Reset state when photos change
+    loadedRef.current.clear();
+    setFirstLoaded(false);
+    setCurrent(0);
+    setPrevious(null);
+
+    preloadImage(0).then(() => {
+      setFirstLoaded(true);
+      // Preload second image in background
+      if (photos.length > 1) {
+        preloadImage(1);
       }
     });
+  }, [photos, preloadImage]);
 
-    // Cleanup: remove references to images that are no longer needed
-    return () => {
-      imageObjectsRef.current.forEach((img, index) => {
-        img.onload = null;
-        img.onerror = null;
-        img.src = "";
+  // Slideshow timer - only starts after first image is loaded
+  useEffect(() => {
+    if (!firstLoaded || photos.length <= 1) return;
+
+    timerRef.current = setInterval(() => {
+      setCurrent((prev) => {
+        const next = (prev + 1) % photos.length;
+        setPrevious(prev);
+
+        // Preload the image after next (look ahead by 1)
+        const lookAhead = (next + 1) % photos.length;
+        preloadImage(lookAhead);
+
+        return next;
       });
-      imageObjectsRef.current.clear();
-    };
-  }, [photos]);
-
-  // Update active photos as images load (phased approach)
-  useEffect(() => {
-    if (photos.length === 0) return;
-
-    const loadedPhotos = photos.filter((_, index) => loaded.has(index));
-
-    // Start with first 6 images once they're loaded (allows transition from initial single photo)
-    if (loadedPhotos.length >= INITIAL_BATCH_SIZE && activePhotos.length <= 1) {
-      setActivePhotos(loadedPhotos.slice(0, INITIAL_BATCH_SIZE));
-      // Only set to 0 if not already set (prevents resetting fade-in)
-      if (current === -1) {
-        setCurrent(0);
-      }
-    }
-    // Add newly loaded images to rotation (only after we have at least 6)
-    else if (activePhotos.length >= INITIAL_BATCH_SIZE && loadedPhotos.length > activePhotos.length) {
-      setActivePhotos(loadedPhotos);
-      // Keep current index valid for new array length
-      setCurrent((prev) => prev % loadedPhotos.length);
-    }
-  }, [loaded.size, photos.length, activePhotos.length, photos]);
-
-  // Start slideshow timer once first batch is ready
-  // Add initial delay to ensure first photo is visible before cycling
-  useEffect(() => {
-    if (activePhotos.length === 0) return;
-
-    let timer: NodeJS.Timeout;
-
-    // Delay first transition to ensure user sees the first photo
-    const initialDelay = setTimeout(() => {
-      timer = setInterval(() => {
-        setCurrent((prev) => {
-          setPrevious(prev);
-          return (prev + 1) % activePhotos.length;
-        });
-      }, interval);
-    }, interval); // Wait one full interval before starting to cycle
+    }, interval);
 
     return () => {
-      clearTimeout(initialDelay);
-      if (timer) clearInterval(timer);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [activePhotos.length, interval]);
+  }, [firstLoaded, photos.length, interval, preloadImage]);
 
   const overlayClass =
     overlay === "dark"
@@ -167,22 +118,33 @@ export default function PhotoSlideshow({
 
   return (
     <div className="slideshow-container">
-      {activePhotos.map((photo, i) => {
-        const isActive = i === current;
-        const isExiting = i === previous;
-        const className = `slideshow-slide ${isActive ? "slideshow-active" : ""} ${isExiting && !isActive ? "slideshow-exit" : ""}`;
-
-        return (
-          <div
-            key={photo}
-            className={className}
-            style={{
-              backgroundImage: `url(${photo})`,
-              transformOrigin: ZOOM_ORIGINS[i % ZOOM_ORIGINS.length],
-            }}
+      {/* Previous image - stays visible during crossfade */}
+      {previous !== null && (
+        <div className="slideshow-slide slideshow-exit" key={`prev-${previous}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photos[previous]}
+            alt=""
+            className="slideshow-img"
+            loading="eager"
           />
-        );
-      })}
+        </div>
+      )}
+
+      {/* Current image */}
+      {firstLoaded && (
+        <div className="slideshow-slide slideshow-active" key={`curr-${current}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photos[current]}
+            alt=""
+            className="slideshow-img"
+            loading="eager"
+            fetchPriority={current === 0 ? "high" : "auto"}
+          />
+        </div>
+      )}
+
       {overlay !== "none" && <div className={`slideshow-overlay ${overlayClass}`} />}
       <div className="slideshow-content">{children}</div>
     </div>
