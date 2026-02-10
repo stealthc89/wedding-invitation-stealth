@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import getDb from "@/lib/db";
+import { CURATED_PHOTOS } from "@/lib/slideshow-photos";
 
 const MEDIA_DIR = path.join(process.cwd(), "public", "media");
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
@@ -10,54 +11,10 @@ const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 const MEDIA_CDN_URL = process.env.MEDIA_CDN_URL || "";
 const USE_CDN = !!MEDIA_CDN_URL;
 
-// Curated slideshow order - tells a romantic love story journey
-// Will be converted to CDN URLs in production
-const CURATED_ORDER = [
-  // Start with romantic Venice - elegant, timeless love
-  "/media/venice-gondola-romantic-moment.jpeg",
-  "/media/venice-basilica-couple-kiss.jpeg",
-  "/media/venice-dock-couple-portrait.jpeg",
-  "/media/venice-gondola-narrow-canal.jpeg",
-  "/media/venice-gondola-rialto-bridge.jpeg",
-
-  // City lights and celebration - Singapore nights
-  "/media/singapore-marina-bay-sands-professional.jpeg",
-  "/media/istanbul-bridge-night.jpeg",
-  "/media/singapore-skyline-upside-down.jpeg",
-
-  // Tropical paradise and adventure - Bali
-  "/media/bali-temple-jumping-reflection.jpeg",
-  "/media/bali-heart-swing-frame.jpeg",
-  "/media/waterfall-tropical-jungle.jpeg",
-
-  // Beach adventures - water and sun
-  "/media/kayaking-couple-selfie.jpeg",
-  "/media/beach-cliffs-upside-down.jpeg",
-  "/media/jet-ski-couple-ocean.jpeg",
-  "/media/jet-ski-waving-solo.jpeg",
-
-  // Underwater exploration - diving deep together
-  "/media/scuba-diving-couple-underwater-heart.jpeg",
-
-  // Ancient wonders - Egypt
-  "/media/egypt-pyramids-camels-couple.jpeg",
-  "/media/desert-sand-dunes-upside-down.jpeg",
-
-  // Winter romance - snow and mountains
-  "/media/snow-mountains-sunset-cuddle.jpeg",
-  "/media/skiing-couple-mountain-slopes.jpeg",
-  "/media/ski-resort-ipsa-sign-couple.jpeg",
-  "/media/snow-mountains-golden-hour.jpeg",
-
-  // Fun adventures together
-  "/media/boxing-ring-couple.jpeg",
-  "/media/bar-upside-down-selfie.jpeg",
-
-  // Grand finale - elegant and artistic
-  "/media/palace-grand-staircase-upside-down.jpeg",
-  "/media/palace-ornate-ceiling-upside-down.jpeg",
-  "/media/purple-tunnel-solo.jpeg",
-];
+// Cache headers - photo list rarely changes
+const CACHE_HEADERS = {
+  "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+};
 
 // Convert local path to CDN URL if CDN is enabled
 function toCdnUrl(localPath: string): string {
@@ -80,9 +37,8 @@ export async function GET() {
     try {
       const photos = JSON.parse(setting.value) as string[];
       if (Array.isArray(photos) && photos.length > 0) {
-        // Convert to CDN URLs if enabled
         const cdnPhotos = photos.map(toCdnUrl);
-        return NextResponse.json(cdnPhotos);
+        return NextResponse.json(cdnPhotos, { headers: CACHE_HEADERS });
       }
     } catch {
       // Fall through to directory scan
@@ -91,8 +47,8 @@ export async function GET() {
 
   // In production with CDN, skip filesystem checks and use curated order directly
   if (USE_CDN) {
-    const cdnPhotos = CURATED_ORDER.map(toCdnUrl);
-    return NextResponse.json(cdnPhotos);
+    const cdnPhotos = CURATED_PHOTOS.map(toCdnUrl);
+    return NextResponse.json(cdnPhotos, { headers: CACHE_HEADERS });
   }
 
   // Development mode: check filesystem
@@ -101,14 +57,14 @@ export async function GET() {
   }
 
   const existingFiles = new Set(fs.readdirSync(MEDIA_DIR));
-  const curatedPhotos = CURATED_ORDER.filter((photoPath) => {
+  const curatedPhotos = CURATED_PHOTOS.filter((photoPath) => {
     const filename = path.basename(photoPath);
     return existingFiles.has(filename);
   });
 
   // If we have curated photos, use them; otherwise fall back to alphabetical scan
   if (curatedPhotos.length > 0) {
-    return NextResponse.json(curatedPhotos);
+    return NextResponse.json(curatedPhotos, { headers: CACHE_HEADERS });
   }
 
   // Ultimate fallback: alphabetical scan
@@ -121,5 +77,5 @@ export async function GET() {
     .sort()
     .map((name) => `/media/${name}`);
 
-  return NextResponse.json(photos);
+  return NextResponse.json(photos, { headers: CACHE_HEADERS });
 }

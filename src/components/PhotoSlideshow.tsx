@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-
-// Fallback photos if API returns empty and no photos prop is given
-const FALLBACK_PHOTOS = [
-  "/media/venice-gondola-romantic-moment.jpeg",
-  "/media/venice-basilica-couple-kiss.jpeg",
-  "/media/singapore-marina-bay-sands-professional.jpeg",
-  "/media/bali-temple-jumping-reflection.jpeg",
-  "/media/egypt-pyramids-camels-couple.jpeg",
-  "/media/snow-mountains-sunset-cuddle.jpeg",
-  "/media/scuba-diving-couple-underwater-heart.jpeg",
-];
+import { CURATED_PHOTOS } from "@/lib/slideshow-photos";
 
 interface PhotoSlideshowProps {
   photos?: string[];
@@ -26,28 +16,13 @@ export default function PhotoSlideshow({
   overlay = "dark",
   children,
 }: PhotoSlideshowProps) {
-  const [photos, setPhotos] = useState<string[]>(photosProp || FALLBACK_PHOTOS);
+  // Use inline curated list by default - no API fetch needed
+  const [photos] = useState<string[]>(photosProp || CURATED_PHOTOS);
   const [current, setCurrent] = useState(0);
   const [previous, setPrevious] = useState<number | null>(null);
   const [firstLoaded, setFirstLoaded] = useState(false);
   const loadedRef = useRef<Set<number>>(new Set());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Fetch slideshow photos dynamically if no explicit photos prop
-  useEffect(() => {
-    if (photosProp) return;
-
-    fetch("/api/slideshow")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setPhotos(data);
-        }
-      })
-      .catch(() => {
-        // Keep fallback photos
-      });
-  }, [photosProp]);
 
   // Preload a specific image by index, returns a promise
   const preloadImage = useCallback(
@@ -71,12 +46,6 @@ export default function PhotoSlideshow({
   // Preload first image immediately, then start slideshow
   useEffect(() => {
     if (photos.length === 0) return;
-
-    // Reset state when photos change
-    loadedRef.current.clear();
-    setFirstLoaded(false);
-    setCurrent(0);
-    setPrevious(null);
 
     preloadImage(0).then(() => {
       setFirstLoaded(true);
