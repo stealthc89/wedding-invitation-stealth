@@ -263,7 +263,7 @@ export default function RSVPPage() {
               )}
             </div>
             {attending && (
-              <p className="text-xs text-white/60 italic mt-4 mb-4">
+              <p className="text-sm text-white italic text-center mt-6 mb-4 pt-4 border-t border-white/20" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
                 Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.
               </p>
             )}
