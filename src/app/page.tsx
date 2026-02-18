@@ -65,7 +65,7 @@ export default function Home() {
           <div className="mb-3">
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="glass-card rounded-lg px-5 py-3.5 text-white hover:bg-black/50 transition-all duration-700 ease-out w-full flex items-center justify-between shadow-lg hover:shadow-2xl"
+              className="glass-card rounded-lg px-5 py-3.5 text-white transition-all duration-700 ease-out w-full flex items-center justify-between"
             >
               <span className="text-sm font-medium tracking-wide">Venue Details</span>
               <svg
@@ -79,13 +79,13 @@ export default function Home() {
             </button>
             {showDetails && (
               <div className="dropdown-content grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                <div className="glass-card rounded-xl p-5 text-white text-left shadow-xl">
+                <div className="rounded-xl p-5 text-white text-left">
                   <h3 className="text-base font-semibold mb-3 tracking-wide">Ceremony</h3>
                   <p className="text-sm text-white/95 mb-2 leading-relaxed">Wood Green New Testament Church of God</p>
                   <p className="text-xs text-white/75 mb-3 leading-relaxed">Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
                   <p className="text-sm font-medium text-white/95 pt-2 border-t border-white/20">Arrive: 12:30 PM | Ceremony: 1:00 PM</p>
                 </div>
-                <div className="glass-card rounded-xl p-5 text-white text-left shadow-xl">
+                <div className="rounded-xl p-5 text-white text-left">
                   <h3 className="text-base font-semibold mb-3 tracking-wide">Reception</h3>
                   <p className="text-sm text-white/95 mb-2 leading-relaxed">Loughton Grand Marquee</p>
                   <p className="text-xs text-white/75 mb-3 leading-relaxed">Langston Road, Loughton, IG10 3TG</p>
@@ -99,7 +99,7 @@ export default function Home() {
           <div className="mb-6">
             <button
               onClick={() => setShowItinerary(!showItinerary)}
-              className="glass-card rounded-lg px-5 py-3.5 text-white hover:bg-black/50 transition-all duration-700 ease-out w-full flex items-center justify-between shadow-lg hover:shadow-2xl"
+              className="glass-card rounded-lg px-5 py-3.5 text-white transition-all duration-700 ease-out w-full flex items-center justify-between"
             >
               <span className="text-sm font-medium tracking-wide">Full Itinerary</span>
               <svg
@@ -112,7 +112,7 @@ export default function Home() {
               </svg>
             </button>
             {showItinerary && (
-              <div className="dropdown-content glass-card rounded-xl p-6 text-white mt-4 shadow-xl">
+              <div className="dropdown-content rounded-xl p-6 text-white mt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="text-left">
                     <h4 className="text-base font-semibold mb-4 text-white border-b border-white/30 pb-3 tracking-wide">Ceremony</h4>
