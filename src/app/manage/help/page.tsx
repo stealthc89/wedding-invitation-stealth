@@ -86,9 +86,11 @@ export default function HelpPage() {
 
         <h3 className="font-semibold text-gray-800 mb-2 mt-4">Guest Actions</h3>
         <ul className="space-y-2 text-sm text-gray-600">
-          <li><strong>Edit</strong> — Change name, email, or plus-one permission</li>
-          <li><strong>Email</strong> — Resend invitation to a specific guest</li>
-          <li><strong>Copy Link</strong> — Get their unique RSVP URL to share manually</li>
+          <li><strong>Edit</strong> — Change name, email, phone, or plus-one allowance</li>
+          <li><strong>Email</strong> — Send invitation email to a specific guest (requires email address)</li>
+          <li><strong>Copy URL</strong> — Copy their unique RSVP link to share manually (e.g., via WhatsApp)</li>
+          <li><strong>Copy Msg</strong> — Copy a ready-made invite message with their RSVP link included</li>
+          <li><strong>Reset</strong> — Reset a guest's RSVP so they can resubmit (only appears after they've responded)</li>
           <li><strong>Delete</strong> — Remove from guest list permanently</li>
         </ul>
       </div>
