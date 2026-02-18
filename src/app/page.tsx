@@ -135,7 +135,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-white/60 italic text-center mt-6 pt-4 border-t border-white/15">
+                <p className="text-sm text-white italic text-center mt-6 pt-4 border-t border-white/20" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
                   Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.
                 </p>
               </div>
