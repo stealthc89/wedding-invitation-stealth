@@ -389,11 +389,10 @@ export default function GuestsPage() {
 
   function downloadTemplate() {
     const csv = [
-      ["Name", "Email", "Phone", "Plus One Allowed", "Plus One Names", "Is Under 10", "Is Plus One", "Linked To Guest"].join(","),
-      ['"John Doe"', '"john@example.com"', '"+1 234 567 8900"', '1', '""', '0', '0', '""'].join(","),
-      ['"Jane Smith"', '"jane@example.com"', '""', '2', '"Partner Name, Child Name"', '0', '0', '""'].join(","),
-      ['"Child Guest"', '""', '""', '0', '""', '1', '0', '""'].join(","),
-      ['"Plus One Guest"', '"plusone@example.com"', '""', '0', '""', '0', '1', '"John Doe"'].join(","),
+      ["Name", "Email", "Plus One Allowed"].join(","),
+      ['"John Doe"', '"john@example.com"', '1'].join(","),
+      ['"Jane Smith"', '"jane@example.com"', '2'].join(","),
+      ['"Mike Johnson"', '"mike@example.com"', '0'].join(","),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
