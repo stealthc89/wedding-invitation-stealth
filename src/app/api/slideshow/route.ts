@@ -7,22 +7,10 @@ import { CURATED_PHOTOS } from "@/lib/slideshow-photos";
 const MEDIA_DIR = path.join(process.cwd(), "public", "media");
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
-// CDN URL for media files (production) or local path (development)
-const MEDIA_CDN_URL = process.env.MEDIA_CDN_URL || "";
-const USE_CDN = !!MEDIA_CDN_URL;
-
 // Cache headers - photo list rarely changes
 const CACHE_HEADERS = {
   "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
 };
-
-// Convert local path to CDN URL if CDN is enabled
-function toCdnUrl(localPath: string): string {
-  if (!USE_CDN) return localPath;
-  // Extract filename from /media/filename.jpg
-  const filename = localPath.replace("/media/", "");
-  return `${MEDIA_CDN_URL}/${filename}`;
-}
 
 // GET /api/slideshow — public endpoint, returns photo paths for the slideshow
 export async function GET() {
@@ -37,21 +25,14 @@ export async function GET() {
     try {
       const photos = JSON.parse(setting.value) as string[];
       if (Array.isArray(photos) && photos.length > 0) {
-        const cdnPhotos = photos.map(toCdnUrl);
-        return NextResponse.json(cdnPhotos, { headers: CACHE_HEADERS });
+        return NextResponse.json(photos, { headers: CACHE_HEADERS });
       }
     } catch {
-      // Fall through to directory scan
+      // Fall through to curated list
     }
   }
 
-  // In production with CDN, skip filesystem checks and use curated order directly
-  if (USE_CDN) {
-    const cdnPhotos = CURATED_PHOTOS.map(toCdnUrl);
-    return NextResponse.json(cdnPhotos, { headers: CACHE_HEADERS });
-  }
-
-  // Development mode: check filesystem
+  // Check filesystem to verify files exist
   if (!fs.existsSync(MEDIA_DIR)) {
     return NextResponse.json([]);
   }
