@@ -136,7 +136,7 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="text-xs text-white/60 italic text-center mt-6 pt-4 border-t border-white/15">
-                  Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or a cash contribution would be gratefully received.
+                  Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.
                 </p>
               </div>
             )}

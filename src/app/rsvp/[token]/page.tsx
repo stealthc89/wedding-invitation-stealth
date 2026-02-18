@@ -264,7 +264,7 @@ export default function RSVPPage() {
             </div>
             {attending && (
               <p className="text-xs text-white/60 italic mt-4 mb-4">
-                Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or a cash contribution would be gratefully received.
+                Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.
               </p>
             )}
             <p className="text-sm text-white/70 border-t border-white/20 pt-4">

@@ -246,7 +246,7 @@ function initSchema(db: Database.Database) {
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
 
-  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or a cash contribution would be gratefully received.</p>
+  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
 
   <p>We can't wait to celebrate with you!</p>
   <p style="color: #888; font-size: 14px;">If you have any questions, please don't hesitate to contact us.</p>
@@ -276,7 +276,7 @@ function initSchema(db: Database.Database) {
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
 
-  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or a cash contribution would be gratefully received.</p>
+  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
 
   <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
@@ -313,7 +313,7 @@ function initSchema(db: Database.Database) {
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
 
-  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or a cash contribution would be gratefully received.</p>
+  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
 
   <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
@@ -345,7 +345,7 @@ function initSchema(db: Database.Database) {
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
   </p>
 
-  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or a cash contribution would be gratefully received.</p>
+  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
 
   <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please reply to this email or contact us directly.</p>
