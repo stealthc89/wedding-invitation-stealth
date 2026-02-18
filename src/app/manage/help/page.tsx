@@ -20,7 +20,7 @@ export default function HelpPage() {
               Go to <strong>Guests</strong> → <strong>Upload CSV / Excel</strong>
             </p>
             <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded font-mono">
-              Required columns: name, email, plus_one_allowed
+              Columns: Name, Email, Phone, Plus One Allowed
             </p>
           </div>
 
@@ -91,6 +91,50 @@ export default function HelpPage() {
           <li><strong>Copy Link</strong> — Get their unique RSVP URL to share manually</li>
           <li><strong>Delete</strong> — Remove from guest list permanently</li>
         </ul>
+      </div>
+
+      {/* Uploading Guest Lists */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-4">📋 Uploading Guest Lists (CSV / Excel)</h2>
+
+        <h3 className="font-semibold text-gray-800 mb-2">CSV Template</h3>
+        <p className="text-sm text-gray-600 mb-3">
+          Your CSV or Excel file should have these columns:
+        </p>
+        <div className="bg-gray-50 p-3 rounded text-xs font-mono space-y-1 mb-4">
+          <p><strong>Name</strong> — Guest's full name (required, must be unique)</p>
+          <p><strong>Email</strong> — Email address (optional — guests will be asked for it when they RSVP if not provided)</p>
+          <p><strong>Phone</strong> — Phone number (optional)</p>
+          <p><strong>Plus One Allowed</strong> — Number of extra guests they can bring: 0, 1, 2, etc. (default: 0)</p>
+        </div>
+
+        <h3 className="font-semibold text-gray-800 mb-2">Safe to Upload Multiple Times</h3>
+        <p className="text-sm text-gray-600 mb-3">
+          You can upload the same file as many times as you like — it won't create duplicates. The system matches guests by name and:
+        </p>
+        <ul className="space-y-2 text-sm text-gray-600 mb-4">
+          <li className="flex items-start gap-2">
+            <span className="text-green-600 font-bold">+</span>
+            <span><strong>New guests</strong> — Added to the list with a fresh RSVP link</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-600 font-bold">~</span>
+            <span><strong>Existing guests with new info</strong> — Updated (e.g., if you add an email or phone they didn't have before)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-gray-400 font-bold">=</span>
+            <span><strong>Existing guests, no changes</strong> — Skipped, nothing is overwritten</span>
+          </li>
+        </ul>
+        <p className="text-sm text-gray-600 mb-3">
+          After uploading, you'll see a summary like: <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">3 added, 2 updated, 5 unchanged</span>
+        </p>
+
+        <div className="bg-amber-50 border border-amber-200 rounded p-3">
+          <p className="text-sm text-amber-800">
+            <strong>Important:</strong> Guest names must be unique. If you try to add a guest with the same name as someone already in the list, it will be treated as the same person. Use full names to avoid conflicts (e.g., "John Smith" not just "John").
+          </p>
+        </div>
       </div>
 
       {/* Email System */}
