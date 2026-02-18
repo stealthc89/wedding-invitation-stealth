@@ -5,6 +5,36 @@ interface EmailOptions {
   to: string;
   subject: string;
   html: string;
+  text?: string;
+}
+
+/**
+ * Converts HTML email to plain text fallback.
+ * Emails with both HTML and text parts score better with spam filters.
+ */
+function htmlToPlainText(html: string): string {
+  return html
+    // Replace <br> and block-level tags with newlines
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, "\n")
+    .replace(/<\/(td|th)>/gi, "\t")
+    // Extract link text with URL
+    .replace(/<a[^>]+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, "$2 ($1)")
+    // Remove remaining HTML tags
+    .replace(/<[^>]+>/g, "")
+    // Decode common HTML entities
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&rsquo;/g, "\u2019")
+    .replace(/&nbsp;/g, " ")
+    // Clean up whitespace
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n /g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function getTransporter() {
@@ -29,9 +59,16 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 
   try {
     const transporter = getTransporter();
+    const fromAddress = process.env.EMAIL_FROM || "wedding@yourdomain.com";
+    const senderName = process.env.EMAIL_SENDER_NAME || "Chris & Candice";
+    const replyTo = process.env.EMAIL_REPLY_TO;
+
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || "wedding@yourdomain.com",
+      from: `"${senderName}" <${fromAddress}>`,
+      ...(replyTo && { replyTo }),
       ...options,
+      // Auto-generate plain text from HTML for better spam scores
+      text: options.text || htmlToPlainText(options.html),
     });
     return true;
   } catch (error) {
