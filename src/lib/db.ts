@@ -353,21 +353,11 @@ function initSchema(db: Database.Database) {
     );
   }
 
-  // Migration: update invitation and itinerary templates if they don't have the gift note
+  // Migration: update invitation, reminder, and itinerary templates if they don't have the gift note
   const giftNote = 'an Amazon voucher or cash would be gratefully received';
   const giftNoteHtml = `<p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>`;
 
-  const templatesNeedingGiftNote = ['invitation', 'itinerary'];
-
-  // Remove gift note from reminder template if it was previously added (guests haven't confirmed yet)
-  const reminderTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'reminder'").get() as { body_html: string } | undefined;
-  if (reminderTmpl && reminderTmpl.body_html.includes(giftNote)) {
-    const cleaned = reminderTmpl.body_html.replace(
-      /\s*<p style="[^"]*">Your presence is the greatest gift of all\. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received\.<\/p>/,
-      ''
-    );
-    db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = 'reminder'").run(cleaned);
-  }
+  const templatesNeedingGiftNote = ['invitation', 'reminder', 'itinerary'];
   for (const slug of templatesNeedingGiftNote) {
     const tmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = ?").get(slug) as { body_html: string } | undefined;
     if (tmpl && !tmpl.body_html.includes(giftNote)) {
