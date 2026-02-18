@@ -205,7 +205,7 @@ export default function GuestsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`✓ Imported ${data.imported} guest${data.imported !== 1 ? "s" : ""} successfully`, "success");
+        showToast(`✓ ${data.message || `Imported ${data.added} guest(s)`}`, "success");
         if (fileRef.current) fileRef.current.value = "";
         fetchGuests();
       } else {

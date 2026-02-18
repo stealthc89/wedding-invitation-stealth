@@ -137,6 +137,12 @@ function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE guests ADD COLUMN linked_to_guest_id INTEGER REFERENCES guests(id) ON DELETE SET NULL");
   }
 
+  // Migration: add UNIQUE index on name column (case-insensitive) if missing
+  const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='guests'").all() as { name: string }[];
+  if (!indexes.some((i) => i.name === "idx_guests_name_unique")) {
+    db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_name_unique ON guests(LOWER(name))");
+  }
+
   // Seed default email templates if none exist
   const count = db.prepare("SELECT COUNT(*) as c FROM email_templates").get() as { c: number };
   if (count.c === 0) {

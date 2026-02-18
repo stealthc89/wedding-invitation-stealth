@@ -93,11 +93,24 @@ export async function POST(req: NextRequest) {
     // Simple email validation regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    const findByName = db.prepare(
+      "SELECT id, email, phone, plus_one_allowed FROM guests WHERE LOWER(name) = LOWER(?)"
+    );
     const insert = db.prepare(
       "INSERT INTO guests (token, name, email, phone, plus_one_allowed) VALUES (?, ?, ?, ?, ?)"
     );
-    const insertMany = db.transaction((rows: Record<string, string>[]) => {
-      let count = 0;
+    const update = db.prepare(
+      `UPDATE guests SET
+        email = COALESCE(NULLIF(?, ''), email),
+        phone = COALESCE(NULLIF(?, ''), phone),
+        plus_one_allowed = CASE WHEN ? > plus_one_allowed THEN ? ELSE plus_one_allowed END,
+        updated_at = datetime('now')
+      WHERE id = ?`
+    );
+
+    const importMany = db.transaction((rows: Record<string, string>[]) => {
+      let added = 0;
+      let updated = 0;
       let skipped = 0;
       for (const row of rows) {
         const name = row.name || row.Name;
@@ -117,34 +130,40 @@ export async function POST(req: NextRequest) {
         const plusOneLower = String(plusOneRaw).toLowerCase().trim();
         let plusOneCount = 0;
         if (["yes", "true", "1"].includes(plusOneLower)) {
-          plusOneCount = 1; // Legacy boolean format
+          plusOneCount = 1;
         } else {
           plusOneCount = Math.max(0, Math.min(parseInt(plusOneRaw) || 0, 10));
         }
 
-        try {
-          insert.run(
-            uuidv4(),
-            name.trim(),
-            email,
-            phone || null,
-            plusOneCount
-          );
-          count++;
-        } catch (error) {
-          // Skip rows that violate constraints (e.g., duplicate emails)
-          console.warn(`[CSV Import] Skipped row due to constraint violation: ${name} (${email})`);
-          skipped++;
+        const existing = findByName.get(name.trim()) as { id: number; email: string | null; phone: string | null; plus_one_allowed: number } | undefined;
+
+        if (existing) {
+          // Check if the CSV row has any new info to add
+          const hasNewEmail = email && (!existing.email || existing.email === "");
+          const hasNewPhone = phone && (!existing.phone || existing.phone === "");
+          const hasHigherPlusOne = plusOneCount > (existing.plus_one_allowed || 0);
+
+          if (hasNewEmail || hasNewPhone || hasHigherPlusOne) {
+            update.run(email, phone, plusOneCount, plusOneCount, existing.id);
+            updated++;
+          } else {
+            skipped++;
+          }
+        } else {
+          insert.run(uuidv4(), name.trim(), email || null, phone || null, plusOneCount);
+          added++;
         }
       }
-      return { count, skipped };
+      return { added, updated, skipped };
     });
 
-    const result = insertMany(records);
+    const result = importMany(records);
     return NextResponse.json({
       success: true,
-      imported: result.count,
-      ...(result.skipped > 0 && { skipped: result.skipped, message: `${result.skipped} row(s) skipped due to invalid email addresses` })
+      added: result.added,
+      updated: result.updated,
+      skipped: result.skipped,
+      message: `${result.added} added, ${result.updated} updated, ${result.skipped} unchanged`,
     });
   }
 
@@ -174,7 +193,7 @@ export async function POST(req: NextRequest) {
     // Handle SQLite constraint violations
     if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
       return NextResponse.json(
-        { error: "A guest with this email already exists" },
+        { error: "A guest with this name already exists" },
         { status: 409 }
       );
     }
