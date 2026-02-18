@@ -12,6 +12,7 @@ export const CURATED_PHOTOS = [
   "/media/singapore-marina-bay-sands-professional.jpeg",
   "/media/istanbul-bridge-night.jpeg",
   "/media/singapore-skyline-upside-down.jpeg",
+  "/media/holiday-lights-couple-selfie.jpeg",
 
   // Tropical paradise and adventure - Bali
   "/media/bali-temple-jumping-reflection.jpeg",
@@ -40,6 +41,7 @@ export const CURATED_PHOTOS = [
   // Fun adventures together
   "/media/boxing-ring-couple.jpeg",
   "/media/bar-upside-down-selfie.jpeg",
+  "/media/arena-celebration-couple-selfie.jpeg",
 
   // Grand finale - elegant and artistic
   "/media/palace-grand-staircase-upside-down.jpeg",
