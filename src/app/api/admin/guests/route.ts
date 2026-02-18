@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const insert = db.prepare(
-      "INSERT INTO guests (token, name, email, plus_one_allowed) VALUES (?, ?, ?, ?)"
+      "INSERT INTO guests (token, name, email, phone, plus_one_allowed) VALUES (?, ?, ?, ?, ?)"
     );
     const insertMany = db.transaction((rows: Record<string, string>[]) => {
       let count = 0;
@@ -102,7 +102,8 @@ export async function POST(req: NextRequest) {
       for (const row of rows) {
         const name = row.name || row.Name;
         const email = (row.email || row.Email || "").trim();
-        const plusOneRaw = row.plus_one_allowed || row["Plus One"] || row.plus_one || "0";
+        const phone = (row.phone || row.Phone || row["Phone Number"] || "").trim();
+        const plusOneRaw = row.plus_one_allowed || row["Plus One Allowed"] || row["Plus One"] || row.plus_one || "0";
         if (!name) continue;
 
         // Validate email: allow empty, but validate if provided
@@ -126,6 +127,7 @@ export async function POST(req: NextRequest) {
             uuidv4(),
             name.trim(),
             email,
+            phone || null,
             plusOneCount
           );
           count++;
