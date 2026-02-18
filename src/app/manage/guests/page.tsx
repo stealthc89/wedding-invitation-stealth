@@ -93,7 +93,33 @@ export default function GuestsPage() {
   async function fetchInviteTemplate() {
     const res = await fetch("/api/admin/settings");
     const data = await res.json();
-    const defaultTemplate = "You're invited to Chris & Candice's wedding! 💕\n\nPlease RSVP using your personal link:\n{url}";
+    const defaultTemplate = `You're Invited! 💒
+
+Dear {name},
+
+We would be delighted to have you celebrate our special day with us!
+
+✨ *Wedding Day Details* ✨
+
+📅 *Date:* Saturday, 23rd May 2026
+
+⛪ *Ceremony*
+Wood Green New Testament Church of God
+Arcadian Gardens, High Road, Wood Green
+London, N22 5AA
+_Arrive: 12:30 PM | Ceremony: 1:00 PM_
+
+🥂 *Reception*
+Loughton Grand Marquee
+Langston Road, Loughton, IG10 3TG
+_Canapés & Drinks: 3:30 PM onwards_
+
+Please RSVP using your personal link:
+{url}
+
+We can't wait to celebrate with you! 💕
+
+Chris & Candice`;
     setInviteTemplate(data.invite_message_template || defaultTemplate);
   }
 
