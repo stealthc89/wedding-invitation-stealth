@@ -267,7 +267,10 @@ export default function RSVPPage() {
                 Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.
               </p>
             )}
-            <p className="text-sm text-white/70 border-t border-white/20 pt-4">
+            <p className="text-xs text-white/50 text-center mt-4">
+              A confirmation email has been sent — please check your junk/spam folder if you don&apos;t see it.
+            </p>
+            <p className="text-sm text-white/70 border-t border-white/20 pt-4 mt-4">
               If you need to make changes, please contact the bride or groom.
             </p>
           </div>
