@@ -114,6 +114,19 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
+/* Force white text in inputs on dark backgrounds (overrides browser defaults & autofill) */
+.glass-card input,
+.glass-card textarea {
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+}
+.glass-card input:-webkit-autofill,
+.glass-card textarea:-webkit-autofill {
+  -webkit-text-fill-color: white !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.3) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Luxurious dropdown animations with cascading effect */
 .dropdown-content {
   animation: cascadeDown 1.2s cubic-bezier(0.19, 1, 0.22, 1);
