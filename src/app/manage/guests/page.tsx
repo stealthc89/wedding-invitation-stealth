@@ -120,7 +120,9 @@ Please RSVP using your personal link:
 We can't wait to celebrate with you! 💕
 
 Chris & Candice`;
-    setInviteTemplate(data.invite_message_template || defaultTemplate);
+    const oldDefault = "You're invited to Chris & Candice's wedding! 💕\n\nPlease RSVP using your personal link:\n{url}";
+    const saved = data.invite_message_template;
+    setInviteTemplate(!saved || saved === oldDefault ? defaultTemplate : saved);
   }
 
   async function saveInviteTemplate() {
