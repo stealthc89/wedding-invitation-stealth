@@ -289,7 +289,7 @@ export default function RSVPPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="your.email@example.com"
-                  className="w-full px-4 py-3 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-base transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
+                  className="w-full px-4 py-3 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-base transition-colors bg-white/10 text-white placeholder:text-white/50"
                 />
               </div>
             )}
@@ -374,7 +374,7 @@ export default function RSVPPage() {
                   maxLength={500}
                   rows={3}
                   placeholder="e.g., nut allergy, gluten-free, halal"
-                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
+                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
                 />
               </div>
             )}
@@ -433,7 +433,7 @@ export default function RSVPPage() {
                             }}
                             required
                             placeholder="Full name"
-                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
                           />
                         </div>
                         <div>
@@ -475,7 +475,7 @@ export default function RSVPPage() {
                             maxLength={500}
                             rows={2}
                             placeholder="e.g., nut allergy, gluten-free, halal"
-                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/90 text-gray-900 placeholder:text-gray-500"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
                           />
                         </div>
                       </div>
