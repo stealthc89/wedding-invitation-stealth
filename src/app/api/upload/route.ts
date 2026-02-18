@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "At least one photo is required" }, { status: 400 });
     }
 
-    if (files.length > 20) {
-      return NextResponse.json({ error: "Maximum 20 photos per upload" }, { status: 400 });
+    if (files.length > 30) {
+      return NextResponse.json({ error: "Maximum 30 photos per upload" }, { status: 400 });
     }
 
     const db = getDb();
@@ -50,6 +50,25 @@ export async function POST(req: NextRequest) {
     const matchedGuest = db
       .prepare("SELECT id FROM guests WHERE LOWER(name) = LOWER(?)")
       .get(guestName) as { id: number } | undefined;
+
+    // Enforce per-guest upload limit (100 photos total)
+    const MAX_PHOTOS_PER_GUEST = 100;
+    const existing = db
+      .prepare("SELECT COUNT(*) as c FROM photo_uploads WHERE LOWER(guest_name) = LOWER(?)")
+      .get(guestName) as { c: number };
+    const remaining = MAX_PHOTOS_PER_GUEST - existing.c;
+    if (remaining <= 0) {
+      return NextResponse.json(
+        { error: `Upload limit reached. Maximum ${MAX_PHOTOS_PER_GUEST} photos per guest.` },
+        { status: 400 }
+      );
+    }
+    if (files.length > remaining) {
+      return NextResponse.json(
+        { error: `You can only upload ${remaining} more photo${remaining !== 1 ? "s" : ""}. You've already uploaded ${existing.c}.` },
+        { status: 400 }
+      );
+    }
 
     const safeName = sanitizeName(guestName);
     const uploaded: string[] = [];
