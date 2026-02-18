@@ -353,6 +353,23 @@ function initSchema(db: Database.Database) {
     );
   }
 
+  // Migration: update invitation, reminder, and itinerary templates if they don't have the gift note
+  const giftNote = 'an Amazon voucher or cash would be gratefully received';
+  const giftNoteHtml = `<p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>`;
+
+  const templatesNeedingGiftNote = ['invitation', 'reminder', 'itinerary'];
+  for (const slug of templatesNeedingGiftNote) {
+    const tmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = ?").get(slug) as { body_html: string } | undefined;
+    if (tmpl && !tmpl.body_html.includes(giftNote)) {
+      // Insert the gift note before the closing </div>
+      const updated = tmpl.body_html.replace(
+        /<\/div>\s*$/,
+        `\n  ${giftNoteHtml}\n</div>`
+      );
+      db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = ?").run(updated, slug);
+    }
+  }
+
   // Migration: seed photo challenge reminder template if missing
   const hasPhotoChallengeReminder = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'photo_challenge_reminder'").get();
   if (!hasPhotoChallengeReminder) {
