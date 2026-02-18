@@ -20,6 +20,7 @@ interface Guest {
   meal_preference: string | null;
   dietary_notes: string | null;
   responded_at: string | null;
+  invite_sent: number;
 }
 
 interface Settings {
@@ -298,6 +299,21 @@ export default function GuestsPage() {
       }
     } catch (error) {
       showToast("✗ Failed to reset RSVP", "error");
+    }
+  }
+
+  async function toggleInviteSent(guestId: number, currentValue: number) {
+    try {
+      const res = await fetch("/api/admin/guests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: guestId, invite_sent: currentValue ? 0 : 1 }),
+      });
+      if (res.ok) {
+        fetchGuests();
+      }
+    } catch {
+      showToast("✗ Failed to update invite status", "error");
     }
   }
 
@@ -934,6 +950,7 @@ export default function GuestsPage() {
                 </div>
               </th>
               <th className="text-left px-2 py-3 font-medium text-gray-600 text-xs">Phone</th>
+              <th className="text-center px-2 py-3 font-medium text-gray-600 text-xs">Sent</th>
               <th
                 className="text-left px-2 py-3 font-medium text-gray-600 cursor-pointer hover:bg-gray-100 select-none text-xs"
                 onClick={() => toggleSort("rsvp_status")}
@@ -1005,6 +1022,14 @@ export default function GuestsPage() {
                         }
                         className="border rounded px-1 py-0.5 text-xs w-full"
                         placeholder="Phone"
+                      />
+                    </td>
+                    <td className="px-2 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={editData.invite_sent !== undefined ? editData.invite_sent === 1 : g.invite_sent === 1}
+                        onChange={(e) => setEditData({ ...editData, invite_sent: e.target.checked ? 1 : 0 })}
+                        className="w-4 h-4 accent-green-600 cursor-pointer"
                       />
                     </td>
                     <td className="px-2 py-2" colSpan={5}>
@@ -1086,6 +1111,14 @@ export default function GuestsPage() {
                       <div className="max-w-[120px] truncate" title={g.phone || ""}>
                         {g.phone || "—"}
                       </div>
+                    </td>
+                    <td className="px-2 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={g.invite_sent === 1}
+                        onChange={() => toggleInviteSent(g.id, g.invite_sent)}
+                        className="w-4 h-4 accent-green-600 cursor-pointer"
+                      />
                     </td>
                     <td className="px-2 py-2">
                       {g.is_plus_one === 1 ? (

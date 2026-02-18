@@ -55,10 +55,15 @@ export async function POST(req: NextRequest) {
 
   let sent = 0;
   let failed = 0;
+  const markSent = db.prepare("UPDATE guests SET invite_sent = 1 WHERE id = ? AND invite_sent = 0");
   for (const guestId of targets) {
     const success = await sendTemplateEmail(guestId, templateSlug, extraVars || {});
-    if (success) sent++;
-    else failed++;
+    if (success) {
+      sent++;
+      markSent.run(guestId);
+    } else {
+      failed++;
+    }
   }
 
   return NextResponse.json({ sent, failed, total: targets.length });

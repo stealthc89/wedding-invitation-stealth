@@ -209,7 +209,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, name, email, phone, plus_one_allowed, plus_one_names, plus_one_meal_preference, is_under_10, is_plus_one, linked_to_guest_id, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes } =
+  const { id, name, email, phone, plus_one_allowed, plus_one_names, plus_one_meal_preference, is_under_10, is_plus_one, linked_to_guest_id, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, invite_sent } =
     await req.json();
   if (!id) {
     return NextResponse.json({ error: "Guest ID required" }, { status: 400 });
@@ -246,9 +246,10 @@ export async function PUT(req: NextRequest) {
       plus_one_attending = COALESCE(?, plus_one_attending),
       meal_preference = COALESCE(?, meal_preference),
       dietary_notes = COALESCE(?, dietary_notes),
+      invite_sent = COALESCE(?, invite_sent),
       updated_at = datetime('now')
     WHERE id = ?`
-  ).run(name, email, phone, validatedPlusOne, plus_one_names, plus_one_meal_preference, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, is_plus_one !== undefined ? (is_plus_one ? 1 : 0) : null, linked_to_guest_id !== undefined ? linked_to_guest_id : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, id);
+  ).run(name, email, phone, validatedPlusOne, plus_one_names, plus_one_meal_preference, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, is_plus_one !== undefined ? (is_plus_one ? 1 : 0) : null, linked_to_guest_id !== undefined ? linked_to_guest_id : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, invite_sent !== undefined ? (invite_sent ? 1 : 0) : null, id);
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

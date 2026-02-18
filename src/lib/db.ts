@@ -143,6 +143,11 @@ function initSchema(db: Database.Database) {
     db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_guests_name_unique ON guests(LOWER(name))");
   }
 
+  // Migration: add invite_sent column if missing (for tracking whether invitation was sent via email or manually)
+  if (!cols.some((c) => c.name === "invite_sent")) {
+    db.exec("ALTER TABLE guests ADD COLUMN invite_sent INTEGER DEFAULT 0");
+  }
+
   // Seed default email templates if none exist
   const count = db.prepare("SELECT COUNT(*) as c FROM email_templates").get() as { c: number };
   if (count.c === 0) {
