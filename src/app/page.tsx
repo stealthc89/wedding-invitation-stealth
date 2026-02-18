@@ -149,7 +149,7 @@ export default function Home() {
                   value={guestId}
                   onChange={(e) => setGuestId(e.target.value)}
                   placeholder="Invite code"
-                  className="w-full px-3 py-2 rounded border border-gray-300 focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 outline-none transition-all text-center text-sm"
+                  className="w-full px-3 py-2 rounded border border-white/30 bg-white/10 text-white placeholder:text-white/50 focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 outline-none transition-all text-center text-sm"
                 />
                 {error && (
                   <p className="text-sm text-red-400">{error}</p>
