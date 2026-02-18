@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import PhotoSlideshow from "@/components/PhotoSlideshow";
 import BackgroundMusic from "@/components/BackgroundMusic";
+import BrandLogo from "@/components/BrandLogo";
 
 interface GuestData {
   id: number;
@@ -167,6 +168,9 @@ export default function RSVPPage() {
         <div className="w-full max-w-lg mx-4 my-8">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <BrandLogo className="w-28 h-20 sm:w-36 sm:h-24 text-white" />
+          </div>
           <p className="text-sm uppercase tracking-[0.3em] text-white/60 mb-3">
             You&apos;re Invited
           </p>

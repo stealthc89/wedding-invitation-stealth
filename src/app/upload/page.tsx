@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function UploadPage() {
   const [name, setName] = useState("");
@@ -55,6 +56,9 @@ export default function UploadPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <BrandLogo className="w-24 h-16 sm:w-28 sm:h-20 text-white" />
+          </div>
           <p className="text-sm uppercase tracking-[0.3em] text-white/50 mb-2">
             Chris & Candice
           </p>

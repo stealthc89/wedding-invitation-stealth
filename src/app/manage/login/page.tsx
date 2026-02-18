@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import BrandLogo from "@/components/BrandLogo";
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_state: "Authentication failed. Please try again.",
@@ -20,6 +21,9 @@ function LoginContent() {
 
   return (
     <div className="w-full max-w-sm">
+      <div className="flex justify-center mb-4">
+        <BrandLogo className="w-24 h-16 text-gray-800" />
+      </div>
       <h1 className="text-2xl font-bold text-center mb-2 text-gray-800">
         Wedding Admin
       </h1>
