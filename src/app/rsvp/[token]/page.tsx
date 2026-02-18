@@ -181,7 +181,7 @@ export default function RSVPPage() {
           <p className="text-xl text-white/90 mb-6">{guest.name}</p>
 
           {/* Wedding Date & Location */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mt-6 text-white">
+          <div className="rounded-lg p-6 mt-6 text-white">
             <p className="text-2xl font-semibold mb-4">Saturday, 23rd May 2026</p>
             <div className="space-y-4 text-sm">
               <div>
