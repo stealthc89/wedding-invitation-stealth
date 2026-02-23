@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import getDb from "@/lib/db";
 import { sendTemplateEmail } from "@/lib/email";
-import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { v4 as uuidv4 } from "uuid";
 
 // GET /api/rsvp?token=xxx — fetch guest info by token
 export async function GET(req: NextRequest) {
-  // Rate limit: 30 requests per 15 minutes per IP to prevent token enumeration
-  const clientId = getClientIdentifier(req.headers);
-  const rateLimit = checkRateLimit(clientId, { maxRequests: 30, windowMs: 15 * 60 * 1000 });
+  const token = req.nextUrl.searchParams.get("token");
+  if (!token) {
+    return NextResponse.json({ error: "Token required" }, { status: 400 });
+  }
+
+  // Rate limit: 200 requests per 15 minutes per invitation token
+  const rateLimit = checkRateLimit(`token:${token}`, { maxRequests: 200, windowMs: 15 * 60 * 1000 });
 
   if (!rateLimit.success) {
     return NextResponse.json(
@@ -23,11 +27,6 @@ export async function GET(req: NextRequest) {
         }
       }
     );
-  }
-
-  const token = req.nextUrl.searchParams.get("token");
-  if (!token) {
-    return NextResponse.json({ error: "Token required" }, { status: 400 });
   }
 
   const db = getDb();
@@ -61,30 +60,29 @@ export async function GET(req: NextRequest) {
 
 // POST /api/rsvp — submit RSVP
 export async function POST(req: NextRequest) {
-  // Rate limit: 5 requests per hour per IP to prevent spam
-  const clientId = getClientIdentifier(req.headers);
-  const rateLimit = checkRateLimit(clientId, { maxRequests: 5, windowMs: 60 * 60 * 1000 });
-
-  if (!rateLimit.success) {
-    return NextResponse.json(
-      { error: "Too many RSVP submissions. Please try again later." },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
-          "X-RateLimit-Limit": rateLimit.limit.toString(),
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": rateLimit.resetAt.toString(),
-        }
-      }
-    );
-  }
-
   try {
     const { token, email, attending, plus_one_attending, plus_one_names, plus_one_meal_preference, plus_one_dietary_notes, meal_preference, dietary_notes } = await req.json();
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
+    }
+
+    // Rate limit: 10 submissions per hour per invitation token
+    const rateLimit = checkRateLimit(`token:${token}`, { maxRequests: 10, windowMs: 60 * 60 * 1000 });
+
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many RSVP submissions. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+            "X-RateLimit-Limit": rateLimit.limit.toString(),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": rateLimit.resetAt.toString(),
+          }
+        }
+      );
     }
     if (typeof attending !== "boolean") {
       return NextResponse.json({ error: "Attendance response required" }, { status: 400 });

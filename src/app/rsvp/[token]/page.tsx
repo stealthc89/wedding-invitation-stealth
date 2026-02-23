@@ -172,11 +172,14 @@ export default function RSVPPage() {
             <BrandLogo className="w-28 h-20 sm:w-36 sm:h-24 text-white" />
           </div>
           <p className="text-sm uppercase tracking-[0.3em] text-white/60 mb-3">
-            You&apos;re Invited
+            Together with their families
           </p>
           <h1 className="text-4xl md:text-5xl text-white mb-2">
             Chris & Candice
           </h1>
+          <p className="text-sm text-white/70 italic mt-1">
+            invite you to celebrate their wedding
+          </p>
           <div className="w-12 h-px bg-white/40 mx-auto my-4" />
           <p className="text-xl text-white/90 mb-6">{guest.name}</p>
 
