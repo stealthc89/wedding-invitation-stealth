@@ -380,6 +380,27 @@ function initSchema(db: Database.Database) {
     }
   }
 
+  // Migration: add RSVP deadline notice to invitation and reminder templates
+  const deadlineMarker = 'Please respond by 31st March 2026';
+  const deadlineHtml = `\n  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 31st March 2026</strong></p>`;
+  for (const slug of ['invitation', 'reminder']) {
+    const tmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = ?").get(slug) as { body_html: string } | undefined;
+    if (tmpl && !tmpl.body_html.includes(deadlineMarker)) {
+      // Insert before the RSVP button paragraph
+      const updated = tmpl.body_html.replace(
+        /<p style="text-align: center; margin: 30px 0;">\s*<a href="{{rsvp_link}}"/,
+        `${deadlineHtml}\n  <p style="text-align: center; margin: 30px 0;">\n    <a href="{{rsvp_link}}"`
+      );
+      db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = ?").run(updated, slug);
+    }
+  }
+
+  // Migration: set RSVP deadline in settings if not already set
+  const existingDeadline = db.prepare("SELECT value FROM settings WHERE key = 'rsvp_deadline'").get() as { value: string } | undefined;
+  if (!existingDeadline) {
+    db.prepare("INSERT INTO settings (key, value) VALUES ('rsvp_deadline', '2026-03-31')").run();
+  }
+
   // Migration: seed photo challenge reminder template if missing
   const hasPhotoChallengeReminder = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'photo_challenge_reminder'").get();
   if (!hasPhotoChallengeReminder) {
