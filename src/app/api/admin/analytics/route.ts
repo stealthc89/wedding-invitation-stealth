@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import getDb from "@/lib/db";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
   } catch {
@@ -10,14 +10,16 @@ export async function GET() {
   }
 
   const db = getDb();
+  const side = req.nextUrl.searchParams.get("side"); // "groom" | "bride" | null
+  const sideClause = side === "groom" ? " AND is_grooms_guest = 1" : side === "bride" ? " AND (is_grooms_guest = 0 OR is_grooms_guest IS NULL)" : "";
 
   // Only count primary guests (not companions) for invitation metrics
   const totalInvited = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE (is_plus_one = 0 OR is_plus_one IS NULL)").get() as { c: number } | undefined
+    db.prepare(`SELECT COUNT(*) as c FROM guests WHERE (is_plus_one = 0 OR is_plus_one IS NULL)${sideClause}`).get() as { c: number } | undefined
   )?.c ?? 0;
 
   const totalResponded = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE rsvp_status = 'responded' AND (is_plus_one = 0 OR is_plus_one IS NULL)").get() as {
+    db.prepare(`SELECT COUNT(*) as c FROM guests WHERE rsvp_status = 'responded' AND (is_plus_one = 0 OR is_plus_one IS NULL)${sideClause}`).get() as {
       c: number;
     } | undefined
   )?.c ?? 0;
@@ -25,18 +27,18 @@ export async function GET() {
   const outstanding = totalInvited - totalResponded;
 
   const totalAttending = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 1 AND (is_plus_one = 0 OR is_plus_one IS NULL)").get() as { c: number } | undefined
+    db.prepare(`SELECT COUNT(*) as c FROM guests WHERE attending = 1 AND (is_plus_one = 0 OR is_plus_one IS NULL)${sideClause}`).get() as { c: number } | undefined
   )?.c ?? 0;
 
   const totalDeclined = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 0 AND rsvp_status = 'responded' AND (is_plus_one = 0 OR is_plus_one IS NULL)").get() as {
+    db.prepare(`SELECT COUNT(*) as c FROM guests WHERE attending = 0 AND rsvp_status = 'responded' AND (is_plus_one = 0 OR is_plus_one IS NULL)${sideClause}`).get() as {
       c: number;
     } | undefined
   )?.c ?? 0;
 
   // Count companion guest records for Plus Ones
   const totalPlusOnes = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE is_plus_one = 1").get() as {
+    db.prepare(`SELECT COUNT(*) as c FROM guests WHERE is_plus_one = 1${sideClause}`).get() as {
       c: number;
     } | undefined
   )?.c ?? 0;
@@ -81,7 +83,7 @@ export async function GET() {
 
   // Total headcount is everyone attending (primary guests + companions)
   const totalHeadcount = (
-    db.prepare("SELECT COUNT(*) as c FROM guests WHERE attending = 1").get() as { c: number } | undefined
+    db.prepare(`SELECT COUNT(*) as c FROM guests WHERE attending = 1${sideClause}`).get() as { c: number } | undefined
   )?.c ?? 0;
 
   return NextResponse.json({

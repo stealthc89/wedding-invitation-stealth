@@ -21,6 +21,7 @@ interface Guest {
   dietary_notes: string | null;
   responded_at: string | null;
   invite_sent: number;
+  is_grooms_guest: number;
 }
 
 interface Settings {
@@ -49,6 +50,8 @@ export default function GuestsPage() {
   const [newIsUnder10, setNewIsUnder10] = useState(false);
   const [newIsPlusOne, setNewIsPlusOne] = useState(false);
   const [newLinkedToGuestId, setNewLinkedToGuestId] = useState<number | null>(null);
+  const [newIsGroomsGuest, setNewIsGroomsGuest] = useState(false);
+  const [sideFilter, setSideFilter] = useState<"all" | "bride" | "groom">("all");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Guest>>({});
   const [message, setMessage] = useState("");
@@ -93,11 +96,13 @@ export default function GuestsPage() {
   async function fetchInviteTemplate() {
     const res = await fetch("/api/admin/settings");
     const data = await res.json();
-    const defaultTemplate = `You're Invited! 💒
+    const defaultTemplate = `Together with their families
+
+Chris & Candice invite you to celebrate their wedding 💒
 
 Dear {name},
 
-We would be delighted to have you celebrate our special day with us!
+We would be delighted to have you join us on our special day!
 
 ✨ *Wedding Day Details* ✨
 
@@ -114,15 +119,20 @@ Loughton Grand Marquee
 Langston Road, Loughton, IG10 3TG
 _Canapés & Drinks: 3:30 PM onwards_
 
+⏰ *Please respond by 31st March 2026*
+
 Please RSVP using your personal link:
 {url}
 
 We can't wait to celebrate with you! 💕
 
 Chris & Candice`;
-    const oldDefault = "You're invited to Chris & Candice's wedding! 💕\n\nPlease RSVP using your personal link:\n{url}";
+    const oldDefaults = [
+      "You're invited to Chris & Candice's wedding! 💕\n\nPlease RSVP using your personal link:\n{url}",
+      "You're Invited! 💒\n\nDear {name},\n\nWe would be delighted to have you celebrate our special day with us!",
+    ];
     const saved = data.invite_message_template;
-    setInviteTemplate(!saved || saved === oldDefault ? defaultTemplate : saved);
+    setInviteTemplate(!saved || oldDefaults.some(old => saved.startsWith(old.split('\n')[0])) || !saved.includes('31st March') ? defaultTemplate : saved);
   }
 
   async function saveInviteTemplate() {
@@ -199,6 +209,7 @@ Chris & Candice`;
           is_under_10: newIsUnder10,
           is_plus_one: newIsPlusOne,
           linked_to_guest_id: newLinkedToGuestId,
+          is_grooms_guest: newIsGroomsGuest,
         }),
       });
       if (res.ok) {
@@ -209,6 +220,7 @@ Chris & Candice`;
         setNewIsUnder10(false);
         setNewIsPlusOne(false);
         setNewLinkedToGuestId(null);
+        setNewIsGroomsGuest(false);
         setShowAdd(false);
         showToast(`✓ Guest "${newName}" added successfully`, "success");
         fetchGuests();
@@ -433,10 +445,10 @@ Chris & Candice`;
 
   function downloadTemplate() {
     const csv = [
-      ["Name", "Email", "Phone", "Plus One Allowed"].join(","),
-      ['"John Doe"', '"john@example.com"', '"+44 7700 900000"', '1'].join(","),
-      ['"Jane Smith"', '"jane@example.com"', '"+44 7700 900001"', '2'].join(","),
-      ['"Mike Johnson"', '"mike@example.com"', '""', '0'].join(","),
+      ["Name", "Email", "Phone", "Plus One Allowed", "Is Groom's Guest"].join(","),
+      ['"John Doe"', '"john@example.com"', '"+44 7700 900000"', '1', 'TRUE'].join(","),
+      ['"Jane Smith"', '"jane@example.com"', '"+44 7700 900001"', '2', 'FALSE'].join(","),
+      ['"Mike Johnson"', '"mike@example.com"', '""', '0', 'TRUE'].join(","),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -451,7 +463,7 @@ Chris & Candice`;
 
   function exportGuestsToCSV(guestList: Guest[], filename: string) {
     const csv = [
-      ["Name", "Email", "Phone", "Plus One Allowed", "Plus One Names", "Is Under 10", "Is Plus One", "Linked To Guest", "RSVP Status", "Attending", "Plus One Attending", "Meal", "Dietary Notes"].join(","),
+      ["Name", "Email", "Phone", "Plus One Allowed", "Is Groom's Guest", "Plus One Names", "Is Under 10", "Is Plus One", "Linked To Guest", "RSVP Status", "Attending", "Plus One Attending", "Meal", "Dietary Notes"].join(","),
       ...guestList.map((g) => {
         // Find the linked guest name if this is a plus-one
         const linkedGuest = g.linked_to_guest_id ? guests.find(guest => guest.id === g.linked_to_guest_id) : null;
@@ -460,6 +472,7 @@ Chris & Candice`;
           `"${g.email || ""}"`,
           `"${g.phone || ""}"`,
           g.plus_one_allowed,
+          g.is_grooms_guest === 1 ? "TRUE" : "FALSE",
           `"${(g.plus_one_names || "").replace(/"/g, '""')}"`,
           g.is_under_10,
           g.is_plus_one || 0,
@@ -563,8 +576,16 @@ Chris & Candice`;
     }
   }
 
+  // Guests after applying just the side filter — used for tab counts so they stay in sync
+  const sideFiltered = sideFilter === "all" ? guests
+    : sideFilter === "groom" ? guests.filter((g) => g.is_grooms_guest === 1)
+    : guests.filter((g) => g.is_grooms_guest !== 1);
+
   const filtered = guests
     .filter((g) => {
+      // Side filter: bride's or groom's guests
+      if (sideFilter === "groom" && g.is_grooms_guest !== 1) return false;
+      if (sideFilter === "bride" && g.is_grooms_guest === 1) return false;
       // Status filters like responded/pending/declined only apply to primary guests
       if (filter === "responded") return g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
       if (filter === "pending") return g.rsvp_status === "pending" && (g.is_plus_one === 0 || !g.is_plus_one);
@@ -802,7 +823,15 @@ Chris & Candice`;
               </label>
               <select
                 value={newLinkedToGuestId || ""}
-                onChange={(e) => setNewLinkedToGuestId(e.target.value ? parseInt(e.target.value) : null)}
+                onChange={(e) => {
+                  const id = e.target.value ? parseInt(e.target.value) : null;
+                  setNewLinkedToGuestId(id);
+                  // Inherit groom/bride side from primary guest
+                  if (id) {
+                    const primary = guests.find((g) => g.id === id);
+                    if (primary) setNewIsGroomsGuest(primary.is_grooms_guest === 1);
+                  }
+                }}
                 className="border border-gray-300 rounded px-2 py-1.5 text-sm w-full"
                 required
               >
@@ -812,12 +841,24 @@ Chris & Candice`;
                   .sort((a, b) => a.name.localeCompare(b.name))
                   .map((g) => (
                     <option key={g.id} value={g.id}>
-                      {g.name}
+                      {g.name} {g.is_grooms_guest === 1 ? "🤵" : "👰"}
                     </option>
                   ))}
               </select>
             </div>
           )}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              id="newIsGroomsGuest"
+              checked={newIsGroomsGuest}
+              onChange={(e) => setNewIsGroomsGuest(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <label htmlFor="newIsGroomsGuest" className="text-xs text-gray-600 cursor-pointer">
+              🤵 Groom&apos;s guest
+            </label>
+          </div>
           <button
             type="submit"
             className="px-3 py-1.5 bg-green-700 text-white rounded text-sm hover:bg-green-800"
@@ -826,6 +867,25 @@ Chris & Candice`;
           </button>
         </form>
       )}
+
+      {/* Side filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500 font-medium">Show:</span>
+        {(["all", "bride", "groom"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setSideFilter(s)}
+            className={`px-3 py-1 rounded text-sm ${
+              sideFilter === s
+                ? "bg-gray-800 text-white"
+                : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            {s === "all" ? "All guests" : s === "bride" ? "👰 Bride's" : "🤵 Groom's"}
+            {" "}({guests.filter((g) => s === "all" ? true : s === "groom" ? g.is_grooms_guest === 1 : g.is_grooms_guest !== 1).length})
+          </button>
+        ))}
+      </div>
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
@@ -840,8 +900,8 @@ Chris & Candice`;
             }`}
           >
             {f === "primary_guests" ? "Primary Guests" : f === "plus_ones" ? "Plus Ones" : f.charAt(0).toUpperCase() + f.slice(1)} ({f === "all"
-              ? guests.length
-              : guests.filter((g) => {
+              ? sideFiltered.length
+              : sideFiltered.filter((g) => {
                   // Status filters like responded/pending/declined only count primary guests
                   if (f === "responded") return g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
                   if (f === "pending") return g.rsvp_status === "pending" && (g.is_plus_one === 0 || !g.is_plus_one);
@@ -1083,6 +1143,17 @@ Chris & Candice`;
                           />
                         </div>
                         <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600">🤵 Groom&apos;s:</label>
+                          <input
+                            type="checkbox"
+                            checked={editData.is_grooms_guest !== undefined ? editData.is_grooms_guest === 1 : g.is_grooms_guest === 1}
+                            onChange={(e) =>
+                              setEditData({ ...editData, is_grooms_guest: e.target.checked ? 1 : 0 })
+                            }
+                            className="w-4 h-4"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
                           <label className="text-xs text-gray-600">Child:</label>
                           <input
                             type="checkbox"
@@ -1124,7 +1195,10 @@ Chris & Candice`;
                       />
                     </td>
                     <td className="px-4 py-2 font-medium text-gray-800">
-                      {g.name}
+                      <span>{g.name}</span>
+                      <span className="ml-1.5 text-xs" title={g.is_grooms_guest === 1 ? "Groom's guest" : "Bride's guest"}>
+                        {g.is_grooms_guest === 1 ? "🤵" : "👰"}
+                      </span>
                     </td>
                     <td className="px-4 py-2">
                       {g.email ? (

@@ -32,31 +32,27 @@ export async function GET() {
     }
   }
 
-  // Check filesystem to verify files exist
+  // Check filesystem
   if (!fs.existsSync(MEDIA_DIR)) {
     return NextResponse.json([]);
   }
 
   const existingFiles = new Set(fs.readdirSync(MEDIA_DIR));
-  const curatedPhotos = CURATED_PHOTOS.filter((photoPath) => {
-    const filename = path.basename(photoPath);
-    return existingFiles.has(filename);
-  });
 
-  // If we have curated photos, use them; otherwise fall back to alphabetical scan
-  if (curatedPhotos.length > 0) {
-    return NextResponse.json(curatedPhotos, { headers: CACHE_HEADERS });
-  }
+  // Start with curated photos that still exist on disk (preserves story order)
+  const curatedPhotos = CURATED_PHOTOS.filter((photoPath) =>
+    existingFiles.has(path.basename(photoPath))
+  );
 
-  // Ultimate fallback: alphabetical scan
-  const photos = fs
-    .readdirSync(MEDIA_DIR)
+  // Append any files in the media dir not already in the curated list
+  const curatedSet = new Set(CURATED_PHOTOS.map((p) => path.basename(p)));
+  const extraPhotos = [...existingFiles]
     .filter((name) => {
       const ext = path.extname(name).toLowerCase();
-      return IMAGE_EXTENSIONS.includes(ext) && name !== ".gitkeep";
+      return IMAGE_EXTENSIONS.includes(ext) && name !== ".gitkeep" && !curatedSet.has(name);
     })
     .sort()
     .map((name) => `/media/${name}`);
 
-  return NextResponse.json(photos, { headers: CACHE_HEADERS });
+  return NextResponse.json([...curatedPhotos, ...extraPhotos], { headers: CACHE_HEADERS });
 }

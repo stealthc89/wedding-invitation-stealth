@@ -137,6 +137,11 @@ function initSchema(db: Database.Database) {
     db.exec("ALTER TABLE guests ADD COLUMN linked_to_guest_id INTEGER REFERENCES guests(id) ON DELETE SET NULL");
   }
 
+  // Migration: add is_grooms_guest column if missing (0 = bride's guest, 1 = groom's guest)
+  if (!cols.some((c) => c.name === "is_grooms_guest")) {
+    db.exec("ALTER TABLE guests ADD COLUMN is_grooms_guest INTEGER DEFAULT 0");
+  }
+
   // Migration: add UNIQUE index on name column (case-insensitive) if missing
   const indexes = db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='guests'").all() as { name: string }[];
   if (!indexes.some((i) => i.name === "idx_guests_name_unique")) {
@@ -264,7 +269,8 @@ function initSchema(db: Database.Database) {
   <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #2d2d2d;">Save the Date</h3>
     <p style="margin: 8px 0;"><strong>Saturday, 23rd May 2026</strong></p>
-    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong> - 1:00 PM</p>
+    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong></p>
+    <p style="margin: 2px 0 4px 0; font-size: 13px; color: #777; font-style: italic;">Arrive: 12:30 PM &nbsp;|&nbsp; Ceremony: 1:00 PM</p>
     <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
     <p style="margin: 16px 0 4px 0;"><strong>Reception</strong> - 3:30 PM onwards</p>
     <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
@@ -301,7 +307,8 @@ function initSchema(db: Database.Database) {
   <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #2d2d2d;">Save the Date</h3>
     <p style="margin: 8px 0;"><strong>Saturday, 23rd May 2026</strong></p>
-    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong> - 1:00 PM</p>
+    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong></p>
+    <p style="margin: 2px 0 4px 0; font-size: 13px; color: #777; font-style: italic;">Arrive: 12:30 PM &nbsp;|&nbsp; Ceremony: 1:00 PM</p>
     <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
     <p style="margin: 16px 0 4px 0;"><strong>Reception</strong> - 3:30 PM onwards</p>
     <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
@@ -333,7 +340,8 @@ function initSchema(db: Database.Database) {
   <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
     <h3 style="margin-top: 0; color: #2d2d2d;">Save the Date</h3>
     <p style="margin: 8px 0;"><strong>Saturday, 23rd May 2026</strong></p>
-    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong> - 1:00 PM</p>
+    <p style="margin: 16px 0 4px 0;"><strong>Ceremony</strong></p>
+    <p style="margin: 2px 0 4px 0; font-size: 13px; color: #777; font-style: italic;">Arrive: 12:30 PM &nbsp;|&nbsp; Ceremony: 1:00 PM</p>
     <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
     <p style="margin: 16px 0 4px 0;"><strong>Reception</strong> - 3:30 PM onwards</p>
     <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
@@ -401,6 +409,93 @@ function initSchema(db: Database.Database) {
     db.prepare("INSERT INTO settings (key, value) VALUES ('rsvp_deadline', '2026-03-31')").run();
   }
 
+  // Migration: update invitation email template with "Together with their families" header and wedding language
+  const invitationV2Marker = 'Together with their families';
+  const invitationTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'invitation'").get() as { body_html: string } | undefined;
+  if (invitationTmpl && !invitationTmpl.body_html.includes(invitationV2Marker)) {
+    db.prepare("UPDATE email_templates SET subject = ?, body_html = ? WHERE slug = 'invitation'").run(
+      "You're Invited to Our Wedding! 💒",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <p style="text-align: center; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 8px;">Together with their families</p>
+  <h1 style="text-align: center; color: #2d2d2d; margin-bottom: 6px;">Chris & Candice</h1>
+  <p style="text-align: center; font-size: 16px; color: #666; margin: 0 0 30px 0; font-style: italic;">invite you to celebrate their wedding</p>
+
+  <p>Dear {{guest_name}},</p>
+  <p>We would be delighted to have you join us on our special day!</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d;">Wedding Day Details</h3>
+    <p style="margin: 8px 0;"><strong>Date:</strong> Saturday, 23rd May 2026</p>
+
+    <p style="margin: 16px 0 8px 0;"><strong>Ceremony</strong></p>
+    <p style="margin: 4px 0; font-size: 14px;">Wood Green New Testament Church of God</p>
+    <p style="margin: 4px 0; font-size: 14px;">Arcadian Gardens, High Road, Wood Green</p>
+    <p style="margin: 4px 0; font-size: 14px;">London, N22 5AA</p>
+    <p style="margin: 4px 0;"><em>Arrive: 12:30 PM | Ceremony: 1:00 PM</em></p>
+
+    <p style="margin: 16px 0 8px 0;"><strong>Reception</strong></p>
+    <p style="margin: 4px 0; font-size: 14px;">Loughton Grand Marquee</p>
+    <p style="margin: 4px 0; font-size: 14px;">Langston Road, Loughton, IG10 3TG</p>
+    <p style="margin: 4px 0;"><em>Canapés & Drinks: 3:30 PM onwards</em></p>
+  </div>
+
+  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 31st March 2026</strong></p>
+
+  <p>Please RSVP by clicking the link below:</p>
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">RSVP Now</a>
+  </p>
+
+  <p style="color: #888; font-size: 14px; text-align: center;">We can't wait to celebrate with you!</p>
+</div>`
+    );
+  }
+
+  // Migration: update reminder email template with "Together with their families" header and deadline
+  const reminderTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'reminder'").get() as { body_html: string } | undefined;
+  if (reminderTmpl && !reminderTmpl.body_html.includes(invitationV2Marker)) {
+    db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = 'reminder'").run(
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <p style="text-align: center; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 8px;">Together with their families</p>
+  <h1 style="text-align: center; color: #2d2d2d; margin-bottom: 6px;">Chris & Candice</h1>
+  <p style="text-align: center; font-size: 16px; color: #666; margin: 0 0 30px 0; font-style: italic;">invite you to celebrate their wedding</p>
+
+  <p>Dear {{guest_name}},</p>
+  <p>We haven't heard from you yet! We'd love to know if you can join us on our special wedding day.</p>
+
+  <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+    <p style="margin: 4px 0; text-align: center;"><strong>Saturday, 23rd May 2026</strong></p>
+    <p style="margin: 4px 0; text-align: center;">Arrive: 12:30 PM | Ceremony: 1:00 PM | Reception: 3:30 PM</p>
+  </div>
+
+  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 31st March 2026</strong></p>
+
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">RSVP Now</a>
+  </p>
+  <p style="color: #888; font-size: 14px; text-align: center;">We can't wait to celebrate with you!</p>
+</div>`
+    );
+  }
+
+  // Migration: add arrival time to reminder template if missing
+  const reminderArrivalMarker = 'Arrive: 12:30 PM';
+  const reminderArrivalTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'reminder'").get() as { body_html: string } | undefined;
+  if (reminderArrivalTmpl && !reminderArrivalTmpl.body_html.includes(reminderArrivalMarker)) {
+    const updated = reminderArrivalTmpl.body_html.replace(
+      'Ceremony: 1:00 PM | Reception: 3:30 PM',
+      'Arrive: 12:30 PM | Ceremony: 1:00 PM | Reception: 3:30 PM'
+    );
+    db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = 'reminder'").run(updated);
+  }
+
+  // Migration: update saved invite_message_template in settings if it doesn't have the deadline
+  const savedInviteMsg = db.prepare("SELECT value FROM settings WHERE key = 'invite_message_template'").get() as { value: string } | undefined;
+  if (savedInviteMsg && !savedInviteMsg.value.includes('31st March')) {
+    const newInviteMsg = `Together with their families\n\nChris & Candice invite you to celebrate their wedding 💒\n\nDear {name},\n\nWe would be delighted to have you join us on our special day!\n\n✨ *Wedding Day Details* ✨\n\n📅 *Date:* Saturday, 23rd May 2026\n\n⛪ *Ceremony*\nWood Green New Testament Church of God\nArcadian Gardens, High Road, Wood Green\nLondon, N22 5AA\n_Arrive: 12:30 PM | Ceremony: 1:00 PM_\n\n🥂 *Reception*\nLoughton Grand Marquee\nLangston Road, Loughton, IG10 3TG\n_Canapés & Drinks: 3:30 PM onwards_\n\n⏰ *Please respond by 31st March 2026*\n\nPlease RSVP using your personal link:\n{url}\n\nWe can't wait to celebrate with you! 💕\n\nChris & Candice`;
+    db.prepare("UPDATE settings SET value = ? WHERE key = 'invite_message_template'").run(newInviteMsg);
+  }
+
   // Migration: seed photo challenge reminder template if missing
   const hasPhotoChallengeReminder = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'photo_challenge_reminder'").get();
   if (!hasPhotoChallengeReminder) {
@@ -418,7 +513,7 @@ function initSchema(db: Database.Database) {
   {{photo_challenges_section}}
 
   <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-    <p style="margin: 4px 0; font-size: 14px;"><strong>Ceremony:</strong> 1:00 PM at Wood Green New Testament Church of God</p>
+    <p style="margin: 4px 0; font-size: 14px;"><strong>Ceremony:</strong> 1:00 PM (Arrive: 12:30 PM) at Wood Green New Testament Church of God</p>
     <p style="margin: 4px 0; font-size: 14px;"><strong>Reception:</strong> 3:30 PM onwards at Loughton Grand Marquee</p>
   </div>
 
@@ -427,6 +522,95 @@ function initSchema(db: Database.Database) {
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your Challenges</a>
   </p>
   <p>See you soon!</p>
+</div>`
+    );
+  }
+
+  // Migration: update photo_challenge_reminder template with direct upload link
+  const photoChallengeV2Marker = '{{upload_link}}';
+  const photoChallengeTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'photo_challenge_reminder'").get() as { body_html: string } | undefined;
+  if (photoChallengeTmpl && !photoChallengeTmpl.body_html.includes(photoChallengeV2Marker)) {
+    db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = 'photo_challenge_reminder'").run(
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <h1 style="text-align: center; color: #2d2d2d;">📸 Photo Challenge Reminder</h1>
+  <p>Dear {{guest_name}},</p>
+  <p>We're so excited to see you at our wedding on <strong>Saturday, 23rd May 2026</strong>!</p>
+  <p>Don't forget about your special photo challenges:</p>
+  {{photo_challenges_section}}
+
+  <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+    <p style="margin: 4px 0; font-size: 14px;"><strong>Ceremony:</strong> 1:00 PM (Arrive: 12:30 PM) at Wood Green New Testament Church of God</p>
+    <p style="margin: 4px 0; font-size: 14px;"><strong>Reception:</strong> 3:30 PM onwards at Loughton Grand Marquee</p>
+  </div>
+
+  <p style="margin-top: 20px;">These photos will help us create lasting memories of our special day. You can upload them directly using the link below, or scan the QR codes at the venue:</p>
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="{{upload_link}}" style="background: #8b7355; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">📤 Upload Your Photos</a>
+  </p>
+  <p style="text-align: center; margin: 20px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your Challenges</a>
+  </p>
+  <p>See you soon!</p>
+</div>`
+    );
+  }
+
+  // Migration: add arrival time to photo_challenge_reminder template if missing
+  const photoChallengeArrivalMarker = 'Arrive: 12:30 PM';
+  const photoChallengeArrivalTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'photo_challenge_reminder'").get() as { body_html: string } | undefined;
+  if (photoChallengeArrivalTmpl && !photoChallengeArrivalTmpl.body_html.includes(photoChallengeArrivalMarker)) {
+    const updated = photoChallengeArrivalTmpl.body_html.replace(
+      '<strong>Ceremony:</strong> 1:00 PM at Wood Green',
+      '<strong>Ceremony:</strong> 1:00 PM (Arrive: 12:30 PM) at Wood Green'
+    );
+    db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = 'photo_challenge_reminder'").run(updated);
+  }
+
+  // Migration: update itinerary email template with "Together with their families" header
+  const itineraryV2Marker = 'Together with their families';
+  const itineraryTmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = 'itinerary'").get() as { body_html: string } | undefined;
+  if (itineraryTmpl && !itineraryTmpl.body_html.includes(itineraryV2Marker)) {
+    db.prepare("UPDATE email_templates SET subject = ?, body_html = ? WHERE slug = 'itinerary'").run(
+      "Wedding Day Itinerary - Chris & Candice 💒",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+  <p style="text-align: center; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-bottom: 8px;">Together with their families</p>
+  <h1 style="text-align: center; color: #2d2d2d; margin-bottom: 6px;">Chris & Candice</h1>
+  <p style="text-align: center; font-size: 16px; color: #666; margin: 0 0 10px 0; font-style: italic;">invite you to celebrate their wedding</p>
+  <p style="text-align: center; font-size: 18px; color: #666; margin: 10px 0 30px 0;">Saturday, 23rd May 2026</p>
+
+  <p>Dear {{guest_name}},</p>
+  <p>We're so excited to celebrate with you! Here's the full schedule for our special day:</p>
+
+  <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #2d2d2d; border-bottom: 2px solid #ddd; padding-bottom: 10px;">Ceremony</h3>
+    <p style="margin: 12px 0;"><strong>12:30 PM</strong> - Guest Arrival</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 14px; color: #555;">Wood Green New Testament Church of God<br/>Arcadian Gardens, High Road, Wood Green<br/>London, N22 5AA</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 13px; color: #777;"><em>Parking around the church is free on Saturdays (please check signs)</em></p>
+
+    <p style="margin: 12px 0;"><strong>1:00 PM</strong> - Ceremony Begins</p>
+    <p style="margin: 12px 0;"><strong>2:30 PM</strong> - Ceremony Ends</p>
+
+    <h3 style="margin: 30px 0 0 0; color: #2d2d2d; border-bottom: 2px solid #ddd; padding-bottom: 10px;">Reception</h3>
+    <p style="margin: 12px 0;"><strong>3:30 PM</strong> - Canapés & Drinks</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 14px; color: #555;">Loughton Grand Marquee<br/>Langston Road, Loughton, IG10 3TG</p>
+    <p style="margin: 4px 0 8px 20px; font-size: 13px; color: #777;"><em>Plenty of parking available at the venue</em></p>
+
+    <p style="margin: 12px 0;"><strong>5:00 PM</strong> - Bride & Groom Arrival</p>
+    <p style="margin: 12px 0;"><strong>6:00 PM</strong> - Dinner Served</p>
+    <p style="margin: 12px 0;"><strong>7:30 PM</strong> - Cake Cutting</p>
+    <p style="margin: 12px 0;"><strong>8:00 PM</strong> - Speeches</p>
+    <p style="margin: 12px 0;"><strong>9:00 PM</strong> - Dance Floor Opens! 🎉</p>
+    <p style="margin: 12px 0;"><strong>1:00 AM</strong> - Evening Ends</p>
+  </div>
+
+  <p style="text-align: center; margin: 30px 0;">
+    <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">View Your RSVP</a>
+  </p>
+
+  <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
+
+  <p>We can't wait to celebrate with you!</p>
+  <p style="color: #888; font-size: 14px;">If you have any questions, please don't hesitate to contact us.</p>
 </div>`
     );
   }

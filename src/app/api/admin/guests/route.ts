@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         email: g.email,
         phone: g.phone || "",
         plus_one_allowed: g.plus_one_allowed || 0,
+        is_grooms_guest: g.is_grooms_guest === 1 ? "TRUE" : "FALSE",
         rsvp_status: g.rsvp_status,
         attending: g.attending === 1 ? "yes" : g.attending === 0 ? "no" : "",
         plus_one_attending: g.plus_one_attending || 0,
@@ -97,13 +98,14 @@ export async function POST(req: NextRequest) {
       "SELECT id, email, phone, plus_one_allowed FROM guests WHERE LOWER(name) = LOWER(?)"
     );
     const insert = db.prepare(
-      "INSERT INTO guests (token, name, email, phone, plus_one_allowed) VALUES (?, ?, ?, ?, ?)"
+      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_grooms_guest) VALUES (?, ?, ?, ?, ?, ?)"
     );
     const update = db.prepare(
       `UPDATE guests SET
         email = COALESCE(NULLIF(?, ''), email),
         phone = COALESCE(NULLIF(?, ''), phone),
         plus_one_allowed = CASE WHEN ? > plus_one_allowed THEN ? ELSE plus_one_allowed END,
+        is_grooms_guest = ?,
         updated_at = datetime('now')
       WHERE id = ?`
     );
@@ -117,6 +119,8 @@ export async function POST(req: NextRequest) {
         const email = (row.email || row.Email || "").trim();
         const phone = (row.phone || row.Phone || row["Phone Number"] || "").trim();
         const plusOneRaw = row.plus_one_allowed || row["Plus One Allowed"] || row["Plus One"] || row.plus_one || "0";
+        const groomsRaw = (row.is_grooms_guest || row["Is Groom's Guest"] || row["is grooms guest"] || "").toString().trim().toLowerCase();
+        const isGroomsGuest = ["true", "1", "yes"].includes(groomsRaw) ? 1 : 0;
         if (!name) continue;
 
         // Validate email: allow empty, but validate if provided
@@ -144,13 +148,13 @@ export async function POST(req: NextRequest) {
           const hasHigherPlusOne = plusOneCount > (existing.plus_one_allowed || 0);
 
           if (hasNewEmail || hasNewPhone || hasHigherPlusOne) {
-            update.run(email, phone, plusOneCount, plusOneCount, existing.id);
+            update.run(email, phone, plusOneCount, plusOneCount, isGroomsGuest, existing.id);
             updated++;
           } else {
             skipped++;
           }
         } else {
-          insert.run(uuidv4(), name.trim(), email || null, phone || null, plusOneCount);
+          insert.run(uuidv4(), name.trim(), email || null, phone || null, plusOneCount, isGroomsGuest);
           added++;
         }
       }
@@ -168,7 +172,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Single guest add
-  const { name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id } = await req.json();
+  const { name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id, is_grooms_guest } = await req.json();
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
@@ -184,8 +188,8 @@ export async function POST(req: NextRequest) {
 
   try {
     db.prepare(
-      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(token, name, trimmedEmail, phone || null, plus_one_allowed || 0, is_under_10 ? 1 : 0, is_plus_one ? 1 : 0, linked_to_guest_id || null);
+      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id, is_grooms_guest) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(token, name, trimmedEmail, phone || null, plus_one_allowed || 0, is_under_10 ? 1 : 0, is_plus_one ? 1 : 0, linked_to_guest_id || null, is_grooms_guest ? 1 : 0);
 
     const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token);
     return NextResponse.json(guest, { status: 201 });
@@ -209,7 +213,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id, name, email, phone, plus_one_allowed, plus_one_names, plus_one_meal_preference, is_under_10, is_plus_one, linked_to_guest_id, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, invite_sent } =
+  const { id, name, email, phone, plus_one_allowed, plus_one_names, plus_one_meal_preference, is_under_10, is_plus_one, linked_to_guest_id, rsvp_status, attending, plus_one_attending, meal_preference, dietary_notes, invite_sent, is_grooms_guest } =
     await req.json();
   if (!id) {
     return NextResponse.json({ error: "Guest ID required" }, { status: 400 });
@@ -247,9 +251,10 @@ export async function PUT(req: NextRequest) {
       meal_preference = COALESCE(?, meal_preference),
       dietary_notes = COALESCE(?, dietary_notes),
       invite_sent = COALESCE(?, invite_sent),
+      is_grooms_guest = COALESCE(?, is_grooms_guest),
       updated_at = datetime('now')
     WHERE id = ?`
-  ).run(name, email, phone, validatedPlusOne, plus_one_names, plus_one_meal_preference, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, is_plus_one !== undefined ? (is_plus_one ? 1 : 0) : null, linked_to_guest_id !== undefined ? linked_to_guest_id : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, invite_sent !== undefined ? (invite_sent ? 1 : 0) : null, id);
+  ).run(name, email, phone, validatedPlusOne, plus_one_names, plus_one_meal_preference, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, is_plus_one !== undefined ? (is_plus_one ? 1 : 0) : null, linked_to_guest_id !== undefined ? linked_to_guest_id : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, invite_sent !== undefined ? (invite_sent ? 1 : 0) : null, is_grooms_guest !== undefined ? (is_grooms_guest ? 1 : 0) : null, id);
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

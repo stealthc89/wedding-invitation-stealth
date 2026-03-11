@@ -1,0 +1,4 @@
+Name,Email,Phone,Plus One Allowed,Is Groom's Guest
+"John Doe","john@example.com","+44 7700 900000",1,TRUE
+"Jane Smith","jane@example.com","+44 7700 900001",2,FALSE
+"Mike Johnson","mike@example.com","",0,TRUE

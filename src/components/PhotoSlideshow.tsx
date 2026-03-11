@@ -16,8 +16,18 @@ export default function PhotoSlideshow({
   overlay = "dark",
   children,
 }: PhotoSlideshowProps) {
-  // Use inline curated list by default - no API fetch needed
-  const [photos] = useState<string[]>(photosProp || CURATED_PHOTOS);
+  // Start with curated list immediately (no loading delay), then sync with API
+  // so any files added/removed from /media auto-update without code changes
+  const [photos, setPhotos] = useState<string[]>(photosProp || CURATED_PHOTOS);
+  useEffect(() => {
+    if (photosProp) return;
+    fetch("/api/slideshow")
+      .then((r) => r.json())
+      .then((data: string[]) => {
+        if (Array.isArray(data) && data.length > 0) setPhotos(data);
+      })
+      .catch(() => {}); // Keep CURATED_PHOTOS on failure
+  }, [photosProp]);
   const [current, setCurrent] = useState(0);
   const [previous, setPrevious] = useState<number | null>(null);
   const [firstLoaded, setFirstLoaded] = useState(false);

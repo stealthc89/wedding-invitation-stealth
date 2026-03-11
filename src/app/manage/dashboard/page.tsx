@@ -27,12 +27,14 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sending, setSending] = useState<string | null>(null);
   const [sendResult, setSendResult] = useState<string | null>(null);
+  const [sideFilter, setSideFilter] = useState<"all" | "bride" | "groom">("all");
 
   useEffect(() => {
-    fetch("/api/admin/analytics")
+    const params = sideFilter !== "all" ? `?side=${sideFilter}` : "";
+    fetch(`/api/admin/analytics${params}`)
       .then((res) => res.json())
       .then(setAnalytics);
-  }, []);
+  }, [sideFilter]);
 
   async function sendEmails(templateSlug: string) {
     setSending(templateSlug);
@@ -72,6 +74,22 @@ export default function DashboardPage() {
           <span>?</span>
           <span>Help</span>
         </a>
+      </div>
+
+      {/* Side filter */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-500 font-medium">View:</span>
+        {(["all", "bride", "groom"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => { setSideFilter(s); setAnalytics(null); }}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              sideFilter === s ? "bg-gray-800 text-white" : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {s === "all" ? "All guests" : s === "bride" ? "👰 Bride's guests" : "🤵 Groom's guests"}
+          </button>
+        ))}
       </div>
 
       {/* Stats Grid */}
@@ -190,8 +208,8 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {analytics.mealBreakdown.map((m) => {
               const pct =
-                analytics.totalAttending > 0
-                  ? Math.round((m.count / analytics.totalAttending) * 100)
+                analytics.totalHeadcount > 0
+                  ? Math.round((m.count / analytics.totalHeadcount) * 100)
                   : 0;
               return (
                 <div key={m.meal_preference} className="flex items-center gap-3">

@@ -189,6 +189,7 @@ export default function RSVPPage() {
             <div className="space-y-4 text-sm">
               <div>
                 <p className="font-semibold text-base mb-1">Ceremony - 1:00 PM</p>
+                <p className="text-white/70 text-xs italic mb-1">Arrive: 12:30 PM</p>
                 <p className="text-white/80">Wood Green New Testament Church of God</p>
                 <p className="text-white/80 text-xs">Arcadian Gardens, High Road, Wood Green, N22 5AA</p>
               </div>

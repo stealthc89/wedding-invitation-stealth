@@ -164,8 +164,8 @@ export async function POST(req: NextRequest) {
         const companionDietary = finalPlusOneDietaryNotes ? JSON.parse(finalPlusOneDietaryNotes) as string[] : [];
 
         const insertCompanion = db.prepare(
-          `INSERT INTO guests (token, name, email, is_plus_one, linked_to_guest_id, rsvp_status, attending, meal_preference, dietary_notes)
-           VALUES (?, ?, ?, 1, ?, 'responded', 1, ?, ?)`
+          `INSERT INTO guests (token, name, email, is_plus_one, linked_to_guest_id, rsvp_status, attending, meal_preference, dietary_notes, is_grooms_guest)
+           VALUES (?, ?, ?, 1, ?, 'responded', 1, ?, ?, ?)`
         );
 
         for (let i = 0; i < companionNames.length && i < finalPlusOneCount; i++) {
@@ -177,7 +177,8 @@ export async function POST(req: NextRequest) {
               null, // Companions don't have their own email
               guest.id,
               companionMeals[i] || "no_preference",
-              companionDietary[i] || null
+              companionDietary[i] || null,
+              guest.is_grooms_guest ?? 0
             );
           }
         }

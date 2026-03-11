@@ -30,7 +30,6 @@ export const CURATED_PHOTOS = [
 
   // Ancient wonders - Egypt
   "/media/egypt-pyramids-camels-couple.jpeg",
-  "/media/desert-sand-dunes-upside-down.jpeg",
 
   // Winter romance - snow and mountains
   "/media/snow-mountains-sunset-cuddle.jpeg",
