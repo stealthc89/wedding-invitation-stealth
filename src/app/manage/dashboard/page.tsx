@@ -206,28 +206,28 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-sm">No responses yet.</p>
         ) : (
           <div className="space-y-2">
-            {analytics.mealBreakdown.map((m) => {
-              const pct =
-                analytics.totalHeadcount > 0
-                  ? Math.round((m.count / analytics.totalHeadcount) * 100)
-                  : 0;
-              return (
-                <div key={m.meal_preference} className="flex items-center gap-3">
-                  <span className="w-32 text-sm text-gray-600">
-                    {MEAL_LABELS[m.meal_preference] || m.meal_preference}
-                  </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
-                    <div
-                      className="bg-gray-700 h-full rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
+            {(() => {
+              const total = analytics.mealBreakdown.reduce((sum, m) => sum + m.count, 0);
+              return analytics.mealBreakdown.map((m) => {
+                const pct = total > 0 ? Math.round((m.count / total) * 100) : 0;
+                return (
+                  <div key={m.meal_preference} className="flex items-center gap-3">
+                    <span className="w-32 text-sm text-gray-600">
+                      {MEAL_LABELS[m.meal_preference] || m.meal_preference}
+                    </span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
+                      <div
+                        className="bg-gray-700 h-full rounded-full transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-600 w-16 text-right">
+                      {m.count} ({pct}%)
+                    </span>
                   </div>
-                  <span className="text-sm text-gray-600 w-16 text-right">
-                    {m.count} ({pct}%)
-                  </span>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         )}
       </div>

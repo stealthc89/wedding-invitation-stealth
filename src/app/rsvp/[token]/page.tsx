@@ -11,6 +11,7 @@ interface GuestData {
   name: string;
   email: string | null;
   plus_one_allowed: number;
+  plus_one_names: string | null;
   rsvp_status: string;
   attending: number | null;
   plus_one_attending: number;
@@ -39,8 +40,10 @@ export default function RSVPPage() {
   const [attending, setAttending] = useState<boolean | null>(null);
   const [plusOneCount, setPlusOneCount] = useState(0);
   const [plusOneNames, setPlusOneNames] = useState<string[]>([]);
+  const [prepopulatedNames, setPrepopulatedNames] = useState<Set<number>>(new Set());
   const [plusOneMealPreferences, setPlusOneMealPreferences] = useState<string[]>([]);
   const [plusOneDietaryNotes, setPlusOneDietaryNotes] = useState<string[]>([]);
+  const [plusOneUnder10, setPlusOneUnder10] = useState<boolean[]>([]);
   const [mealPreference, setMealPreference] = useState("no_preference");
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [email, setEmail] = useState("");
@@ -58,6 +61,24 @@ export default function RSVPPage() {
         setEmail(data.email || "");
         if (data.rsvp_deadline) setDeadline(data.rsvp_deadline);
         if (data.challenges) setChallenges(data.challenges);
+
+        // Pre-populate plus-one names if admin has set them and guest hasn't responded yet
+        if (data.rsvp_status !== "responded" && data.plus_one_names) {
+          try {
+            const names = JSON.parse(data.plus_one_names) as string[];
+            if (names.length > 0) {
+              setPlusOneCount(names.length);
+              setPlusOneNames(names);
+              setPlusOneMealPreferences(Array(names.length).fill("no_preference"));
+              setPlusOneDietaryNotes(Array(names.length).fill(""));
+              setPlusOneUnder10(Array(names.length).fill(false));
+              setPrepopulatedNames(new Set(names.map((_, i) => i)));
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+
         if (data.rsvp_status === "responded") {
           setSubmitted(true);
           setAttending(data.attending === 1);
@@ -83,6 +104,13 @@ export default function RSVPPage() {
               setPlusOneDietaryNotes([]);
             }
           }
+          if (data.plus_one_under_10) {
+            try {
+              setPlusOneUnder10(JSON.parse(data.plus_one_under_10));
+            } catch {
+              setPlusOneUnder10([]);
+            }
+          }
           setMealPreference(data.meal_preference || "no_preference");
           setDietaryNotes(data.dietary_notes || "");
         }
@@ -94,7 +122,7 @@ export default function RSVPPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (attending === null) return;
-    if (!email || !email.includes("@")) {
+    if (attending && (!email || !email.includes("@"))) {
       setError("Please enter a valid email address");
       return;
     }
@@ -122,6 +150,7 @@ export default function RSVPPage() {
           plus_one_names: attending && plusOneCount > 0 ? JSON.stringify(plusOneNames.slice(0, plusOneCount)) : null,
           plus_one_meal_preference: attending && plusOneCount > 0 ? JSON.stringify(plusOneMealPreferences.slice(0, plusOneCount)) : null,
           plus_one_dietary_notes: attending && plusOneCount > 0 ? JSON.stringify(plusOneDietaryNotes.slice(0, plusOneCount)) : null,
+          plus_one_under_10: attending && plusOneCount > 0 ? JSON.stringify(plusOneUnder10.slice(0, plusOneCount)) : null,
           meal_preference: attending ? mealPreference : null,
           dietary_notes: attending ? dietaryNotes : null,
         }),
@@ -181,7 +210,24 @@ export default function RSVPPage() {
             invite you to celebrate their wedding
           </p>
           <div className="w-12 h-px bg-white/40 mx-auto my-4" />
-          <p className="text-xl text-white/90 mb-6">{guest.name}</p>
+          {(() => {
+            const extraNames = guest.plus_one_names
+              ? (() => { try { return JSON.parse(guest.plus_one_names) as string[]; } catch { return []; } })().filter(Boolean)
+              : [];
+            if (extraNames.length === 0) {
+              // No names given yet — show placeholder if they're allowed guests
+              if (guest.plus_one_allowed > 0) {
+                const guestWord = guest.plus_one_allowed === 1 ? "Guest" : "Guests";
+                return <p className="text-xl text-white/90 mb-6">{guest.name} & {guestWord}</p>;
+              }
+              return <p className="text-xl text-white/90 mb-6">{guest.name}</p>;
+            }
+            const allNames = [guest.name, ...extraNames];
+            const formatted = allNames.length === 2
+              ? allNames.join(" & ")
+              : allNames.slice(0, -1).join(", ") + " & " + allNames[allNames.length - 1];
+            return <p className="text-xl text-white/90 mb-6">{formatted}</p>;
+          })()}
 
           {/* Wedding Date & Location */}
           <div className="rounded-lg p-6 mt-6 text-white">
@@ -271,6 +317,10 @@ export default function RSVPPage() {
                 Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.
               </p>
             )}
+            <p className="text-sm text-white/80 text-center mt-4 pb-4 border-b border-white/20">
+              🗓️ View the latest itinerary and wedding details on our{" "}
+              <a href="/" className="underline text-white font-medium">wedding website</a>.
+            </p>
             <p className="text-xs text-white/50 text-center mt-4">
               A confirmation email has been sent — please check your junk/spam folder if you don&apos;t see it.
             </p>
@@ -286,11 +336,11 @@ export default function RSVPPage() {
               </div>
             )}
 
-            {/* Email (required) */}
-            {!guest.email && (
+            {/* Email (required only when accepting) */}
+            {!guest.email && attending !== false && (
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-white mb-1">
-                  Email address <span className="text-red-400">*</span>
+                  Email address {attending === true && <span className="text-red-400">*</span>}
                 </label>
                 <p className="text-xs text-white/70 mb-3">
                   We'll send your confirmation and event details here
@@ -314,7 +364,23 @@ export default function RSVPPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setAttending(true)}
+                  onClick={() => {
+                    setAttending(true);
+                    // Restore pre-populated names if count was reset by declining
+                    if (plusOneCount === 0 && guest.plus_one_names) {
+                      try {
+                        const names = JSON.parse(guest.plus_one_names) as string[];
+                        if (names.length > 0) {
+                          setPlusOneCount(names.length);
+                          setPlusOneNames(names);
+                          setPlusOneMealPreferences(Array(names.length).fill("no_preference"));
+                          setPlusOneDietaryNotes(Array(names.length).fill(""));
+                          setPlusOneUnder10(Array(names.length).fill(false));
+                          setPrepopulatedNames(new Set(names.map((_, i) => i)));
+                        }
+                      } catch { /* ignore */ }
+                    }
+                  }}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === true
                       ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
@@ -328,9 +394,7 @@ export default function RSVPPage() {
                   onClick={() => {
                     setAttending(false);
                     setPlusOneCount(0);
-                    setPlusOneNames([]);
-                    setPlusOneMealPreferences([]);
-                    setPlusOneDietaryNotes([]);
+                    // Keep names in state so they're restored if switching back to attending
                   }}
                   className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all ${
                     attending === false
@@ -343,164 +407,189 @@ export default function RSVPPage() {
               </div>
             </div>
 
-            {/* Primary Guest - Meal Preference */}
+            {/* Guest Details — primary + additional in consistent card format */}
             {attending && (
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-white mb-1">
-                  Your meal preference
-                </label>
-                <p className="text-xs text-white/70 mb-3">
-                  For {guest.name}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {MEAL_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setMealPreference(option.value)}
-                      className={`py-2.5 px-3 rounded-lg border-2 text-sm transition-all ${
-                        mealPreference === option.value
-                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                          : "border-white/40 hover:border-[var(--color-accent)] text-white"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Primary Guest - Dietary Notes */}
-            {attending && (
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-white mb-1">
-                  Your dietary restrictions or special requests
-                </label>
-                <p className="text-xs text-white/70 mb-3">
-                  Allergies, intolerances, or anything we should know.
-                </p>
-                <textarea
-                  value={dietaryNotes}
-                  onChange={(e) => setDietaryNotes(e.target.value)}
-                  maxLength={500}
-                  rows={3}
-                  placeholder="e.g., nut allergy, gluten-free, halal"
-                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
-                />
-              </div>
-            )}
-
-            {/* Additional Guests */}
-            {attending && guest.plus_one_allowed > 0 && (
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-white mb-1">
-                  How many additional guests are you bringing?
-                </label>
-                <p className="text-xs text-white/70 mb-3">
-                  You may bring up to {guest.plus_one_allowed} additional guest{guest.plus_one_allowed > 1 ? 's' : ''}
-                </p>
-                <div className="flex gap-2 mb-4">
-                  {Array.from({ length: guest.plus_one_allowed + 1 }, (_, i) => i).map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      onClick={() => {
-                        setPlusOneCount(num);
-                        setPlusOneNames(Array(num).fill(''));
-                        setPlusOneMealPreferences(Array(num).fill('no_preference'));
-                        setPlusOneDietaryNotes(Array(num).fill(''));
-                      }}
-                      className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all font-medium ${
-                        plusOneCount === num
-                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                          : "border-white/40 hover:border-[var(--color-accent)] text-white"
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Names, meal preferences, and dietary notes for each additional guest */}
-                {plusOneCount > 0 && (
-                  <div className="space-y-4 bg-white/10 rounded-lg p-4">
-                    <p className="text-sm font-medium text-white">
-                      Please provide details for your additional guest{plusOneCount > 1 ? 's' : ''}:
+                {guest.plus_one_allowed > 0 && (
+                  <>
+                    <label className="block text-sm font-semibold text-white mb-1">
+                      How many additional guests are you bringing?
+                    </label>
+                    <p className="text-xs text-white/70 mb-3">
+                      You may bring up to {guest.plus_one_allowed} additional guest{guest.plus_one_allowed > 1 ? 's' : ''}
                     </p>
-                    {Array.from({ length: plusOneCount }, (_, i) => (
-                      <div key={i} className="space-y-3 bg-white/5 rounded-lg p-3 border border-white/20">
-                        <p className="text-xs font-semibold text-white">Guest {i + 1}</p>
-                        <div>
-                          <label className="block text-xs text-white/70 mb-1">
-                            Full name <span className="text-red-400">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={plusOneNames[i] || ''}
-                            onChange={(e) => {
-                              const newNames = [...plusOneNames];
-                              newNames[i] = e.target.value;
-                              setPlusOneNames(newNames);
-                            }}
-                            required
-                            placeholder="Full name"
-                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-white/70 mb-2">
-                            Meal preference
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {MEAL_OPTIONS.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={() => {
-                                  const newPrefs = [...plusOneMealPreferences];
-                                  newPrefs[i] = option.value;
-                                  setPlusOneMealPreferences(newPrefs);
-                                }}
-                                className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
-                                  (plusOneMealPreferences[i] || 'no_preference') === option.value
-                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                                    : "border-white/40 hover:border-[var(--color-accent)] text-white"
-                                }`}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-white/70 mb-1">
-                            Dietary restrictions or special requests
-                          </label>
-                          <textarea
-                            value={plusOneDietaryNotes[i] || ''}
-                            onChange={(e) => {
-                              const newNotes = [...plusOneDietaryNotes];
-                              newNotes[i] = e.target.value;
-                              setPlusOneDietaryNotes(newNotes);
-                            }}
-                            maxLength={500}
-                            rows={2}
-                            placeholder="e.g., nut allergy, gluten-free, halal"
-                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
-                          />
+                    <div className="flex gap-2 mb-4">
+                      {Array.from({ length: guest.plus_one_allowed + 1 }, (_, i) => i).map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => {
+                            setPlusOneCount(num);
+                            setPlusOneNames(prev => {
+                              const updated = Array(num).fill('');
+                              for (let i = 0; i < num; i++) updated[i] = prev[i] || '';
+                              return updated;
+                            });
+                            setPlusOneMealPreferences(prev => {
+                              const updated = Array(num).fill('no_preference');
+                              for (let i = 0; i < num; i++) updated[i] = prev[i] || 'no_preference';
+                              return updated;
+                            });
+                            setPlusOneDietaryNotes(prev => {
+                              const updated = Array(num).fill('');
+                              for (let i = 0; i < num; i++) updated[i] = prev[i] || '';
+                              return updated;
+                            });
+                            setPlusOneUnder10(prev => {
+                              const updated = Array(num).fill(false);
+                              for (let i = 0; i < num; i++) updated[i] = prev[i] || false;
+                              return updated;
+                            });
+                          }}
+                          className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all font-medium ${
+                            plusOneCount === num
+                              ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                              : "border-white/40 hover:border-[var(--color-accent)] text-white"
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-4 bg-white/10 rounded-lg p-4">
+                  <p className="text-sm font-medium text-white">
+                    Please provide details for {plusOneCount > 0 ? "all guests" : "your attendance"}:
+                  </p>
+
+                  {/* Primary guest card */}
+                  <div className="space-y-3 bg-white/5 rounded-lg p-3 border border-white/20">
+                    <p className="text-xs font-semibold text-white">{guest.name} (you)</p>
+                    <div>
+                      <label className="block text-xs text-white/70 mb-2">Meal preference</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {MEAL_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setMealPreference(option.value)}
+                            className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
+                              mealPreference === option.value
+                                ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                                : "border-white/40 hover:border-[var(--color-accent)] text-white"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-white/70 mb-1">
+                        Dietary restrictions or special requests
+                      </label>
+                      <textarea
+                        value={dietaryNotes}
+                        onChange={(e) => setDietaryNotes(e.target.value)}
+                        maxLength={500}
+                        rows={2}
+                        placeholder="e.g., nut allergy, gluten-free, halal"
+                        className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Additional guest cards */}
+                  {Array.from({ length: plusOneCount }, (_, i) => (
+                    <div key={i} className="space-y-3 bg-white/5 rounded-lg p-3 border border-white/20">
+                      <p className="text-xs font-semibold text-white">Guest {i + 1}</p>
+                      <div>
+                        <label className="block text-xs text-white/70 mb-1">
+                          Full name <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={plusOneNames[i] || ''}
+                          onChange={(e) => {
+                            const newNames = [...plusOneNames];
+                            newNames[i] = e.target.value;
+                            setPlusOneNames(newNames);
+                          }}
+                          required
+                          disabled={prepopulatedNames.has(i)}
+                          placeholder="Full name"
+                          className={`w-full px-3 py-2 rounded-lg border-2 text-sm transition-colors ${
+                            prepopulatedNames.has(i)
+                              ? "border-white/20 bg-white/5 text-white/70 cursor-not-allowed"
+                              : "border-white/30 focus:border-[var(--color-accent)] focus:outline-none bg-white/10 text-white placeholder:text-white/50"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-white/70 mb-2">Meal preference</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {MEAL_OPTIONS.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                const newPrefs = [...plusOneMealPreferences];
+                                newPrefs[i] = option.value;
+                                setPlusOneMealPreferences(newPrefs);
+                              }}
+                              className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
+                                (plusOneMealPreferences[i] || 'no_preference') === option.value
+                                  ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                                  : "border-white/40 hover:border-[var(--color-accent)] text-white"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <div>
+                        <label className="block text-xs text-white/70 mb-1">
+                          Dietary restrictions or special requests
+                        </label>
+                        <textarea
+                          value={plusOneDietaryNotes[i] || ''}
+                          onChange={(e) => {
+                            const newNotes = [...plusOneDietaryNotes];
+                            newNotes[i] = e.target.value;
+                            setPlusOneDietaryNotes(newNotes);
+                          }}
+                          maxLength={500}
+                          rows={2}
+                          placeholder="e.g., nut allergy, gluten-free, halal"
+                          className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
+                        />
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={plusOneUnder10[i] || false}
+                          onChange={(e) => {
+                            const updated = [...plusOneUnder10];
+                            updated[i] = e.target.checked;
+                            setPlusOneUnder10(updated);
+                          }}
+                          className="w-4 h-4 accent-[var(--color-accent)]"
+                        />
+                        <span className="text-xs text-white/70">Child (under 10)</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* Submit */}
             <button
               type="submit"
-              disabled={attending === null || submitting || (!guest.email && !email)}
+              disabled={attending === null || submitting || (attending === true && !guest.email && !email)}
               className="w-full py-3.5 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md font-medium text-base"
             >
               {submitting ? (

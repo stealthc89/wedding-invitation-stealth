@@ -51,14 +51,18 @@ export default function GuestsPage() {
   const [newIsPlusOne, setNewIsPlusOne] = useState(false);
   const [newLinkedToGuestId, setNewLinkedToGuestId] = useState<number | null>(null);
   const [newIsGroomsGuest, setNewIsGroomsGuest] = useState(false);
+  const [newAttending, setNewAttending] = useState<"" | "1" | "0">("");
+  const [newMealPreference, setNewMealPreference] = useState("");
   const [sideFilter, setSideFilter] = useState<"all" | "bride" | "groom">("all");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<Guest>>({});
+  const [editPlusOneNamesText, setEditPlusOneNamesText] = useState("");
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error" | "info">("info");
   const [inviteTemplate, setInviteTemplate] = useState("");
   const [editingTemplate, setEditingTemplate] = useState(false);
   const [tempTemplate, setTempTemplate] = useState("");
+
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -152,9 +156,20 @@ Chris & Candice`;
     }
   }
 
+
   function getInviteMessage(guest: Guest): string {
     const url = `${baseUrl}/rsvp/${guest.token}`;
-    return inviteTemplate.replace("{url}", url).replace("{name}", guest.name);
+    let plusOneNamesStr = "";
+    if (guest.plus_one_names) {
+      try {
+        const names = JSON.parse(guest.plus_one_names) as string[];
+        if (names.length > 0) plusOneNamesStr = names.join(", ");
+      } catch { /* ignore */ }
+    }
+    return inviteTemplate
+      .replace("{url}", url)
+      .replace("{name}", guest.name)
+      .replace("{plus_one_names}", plusOneNamesStr);
   }
 
   async function copyInviteMessage(guest: Guest) {
@@ -210,6 +225,9 @@ Chris & Candice`;
           is_plus_one: newIsPlusOne,
           linked_to_guest_id: newLinkedToGuestId,
           is_grooms_guest: newIsGroomsGuest,
+          attending: newAttending !== "" ? parseInt(newAttending) : undefined,
+          rsvp_status: newAttending !== "" ? "responded" : undefined,
+          meal_preference: newMealPreference || undefined,
         }),
       });
       if (res.ok) {
@@ -221,6 +239,8 @@ Chris & Candice`;
         setNewIsPlusOne(false);
         setNewLinkedToGuestId(null);
         setNewIsGroomsGuest(false);
+        setNewAttending("");
+        setNewMealPreference("");
         setShowAdd(false);
         showToast(`✓ Guest "${newName}" added successfully`, "success");
         fetchGuests();
@@ -282,15 +302,18 @@ Chris & Candice`;
     if (!editingId) return;
 
     try {
+      const names = editPlusOneNamesText.split(",").map(n => n.trim()).filter(Boolean);
+      const plus_one_names = names.length ? JSON.stringify(names) : null;
       const res = await fetch("/api/admin/guests", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingId, ...editData }),
+        body: JSON.stringify({ id: editingId, ...editData, plus_one_names }),
       });
       if (res.ok) {
         showToast("✓ Guest updated successfully", "success");
         setEditingId(null);
         setEditData({});
+        setEditPlusOneNamesText("");
         fetchGuests();
       } else {
         showToast("✗ Failed to update guest", "error");
@@ -339,6 +362,21 @@ Chris & Candice`;
       }
     } catch (error) {
       showToast("✗ Failed to reset RSVP", "error");
+    }
+  }
+
+  async function toggleUnder10(guestId: number, currentValue: number) {
+    try {
+      const res = await fetch("/api/admin/guests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: guestId, is_under_10: currentValue ? 0 : 1 }),
+      });
+      if (res.ok) {
+        fetchGuests();
+      }
+    } catch (error) {
+      showToast("✗ Failed to update guest", "error");
     }
   }
 
@@ -445,10 +483,10 @@ Chris & Candice`;
 
   function downloadTemplate() {
     const csv = [
-      ["Name", "Email", "Phone", "Plus One Allowed", "Is Groom's Guest"].join(","),
-      ['"John Doe"', '"john@example.com"', '"+44 7700 900000"', '1', 'TRUE'].join(","),
-      ['"Jane Smith"', '"jane@example.com"', '"+44 7700 900001"', '2', 'FALSE'].join(","),
-      ['"Mike Johnson"', '"mike@example.com"', '""', '0', 'TRUE'].join(","),
+      ["Name", "Email", "Phone", "Plus One Allowed", "Is Groom's Guest", "Plus One Names"].join(","),
+      ['"John Doe"', '"john@example.com"', '"+44 7700 900000"', '1', 'TRUE', '"Jane Doe"'].join(","),
+      ['"Jane Smith"', '"jane@example.com"', '"+44 7700 900001"', '2', 'FALSE', '"Bob Smith, Alice Brown"'].join(","),
+      ['"Mike Johnson"', '"mike@example.com"', '""', '0', 'TRUE', '""'].join(","),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -595,6 +633,7 @@ Chris & Candice`;
         return g.attending === 0 && g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
       if (filter === "plus_ones") return g.is_plus_one === 1;
       if (filter === "primary_guests") return g.is_plus_one === 0 || !g.is_plus_one;
+      if (filter === "under_10") return g.is_under_10 === 1;
       return true;
     })
     .sort((a, b) => {
@@ -718,7 +757,7 @@ Chris & Candice`;
               placeholder="Use {url} for the personalized link and {name} for guest name"
             />
             <p className="text-xs text-gray-500">
-              Use <code className="bg-gray-100 px-1 rounded">{"{url}"}</code> for the personalized RSVP link and <code className="bg-gray-100 px-1 rounded">{"{name}"}</code> for the guest's name
+              Use <code className="bg-gray-100 px-1 rounded">{"{url}"}</code> for the RSVP link, <code className="bg-gray-100 px-1 rounded">{"{name}"}</code> for the guest&apos;s name, and <code className="bg-gray-100 px-1 rounded">{"{plus_one_names}"}</code> for any pre-set additional guest names (comma-separated, blank if none)
             </p>
             <div className="flex gap-2">
               <button
@@ -859,6 +898,32 @@ Chris & Candice`;
               🤵 Groom&apos;s guest
             </label>
           </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Attending</label>
+            <select
+              value={newAttending}
+              onChange={(e) => setNewAttending(e.target.value as "" | "1" | "0")}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+            >
+              <option value="">—</option>
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Meal Preference</label>
+            <select
+              value={newMealPreference}
+              onChange={(e) => setNewMealPreference(e.target.value)}
+              className="border border-gray-300 rounded px-2 py-1.5 text-sm"
+            >
+              <option value="">—</option>
+              <option value="no_preference">No preference</option>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="vegan">Vegan</option>
+              <option value="pescatarian">Pescatarian</option>
+            </select>
+          </div>
           <button
             type="submit"
             className="px-3 py-1.5 bg-green-700 text-white rounded text-sm hover:bg-green-800"
@@ -889,7 +954,7 @@ Chris & Candice`;
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">
-        {["all", "primary_guests", "plus_ones", "pending", "responded", "attending", "declined"].map((f) => (
+        {["all", "primary_guests", "plus_ones", "under_10", "pending", "responded", "attending", "declined"].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -899,7 +964,7 @@ Chris & Candice`;
                 : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
             }`}
           >
-            {f === "primary_guests" ? "Primary Guests" : f === "plus_ones" ? "Plus Ones" : f.charAt(0).toUpperCase() + f.slice(1)} ({f === "all"
+            {f === "primary_guests" ? "Primary Guests" : f === "plus_ones" ? "Plus Ones" : f === "under_10" ? "Under 10" : f.charAt(0).toUpperCase() + f.slice(1)} ({f === "all"
               ? sideFiltered.length
               : sideFiltered.filter((g) => {
                   // Status filters like responded/pending/declined only count primary guests
@@ -910,6 +975,7 @@ Chris & Candice`;
                   if (f === "declined") return g.attending === 0 && g.rsvp_status === "responded" && (g.is_plus_one === 0 || !g.is_plus_one);
                   if (f === "plus_ones") return g.is_plus_one === 1;
                   if (f === "primary_guests") return g.is_plus_one === 0 || !g.is_plus_one;
+                  if (f === "under_10") return g.is_under_10 === 1;
                   return true;
                 }).length})
           </button>
@@ -1064,6 +1130,7 @@ Chris & Candice`;
               <th className="text-left px-2 py-3 font-medium text-gray-600 text-xs">+1</th>
               <th className="text-left px-2 py-3 font-medium text-gray-600 text-xs">Names</th>
               <th className="text-left px-2 py-3 font-medium text-gray-600 text-xs">Meal</th>
+              <th className="text-center px-2 py-3 font-medium text-gray-600 text-xs" title="Child (under 10)">👶</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
@@ -1120,7 +1187,7 @@ Chris & Candice`;
                         className="w-4 h-4 accent-green-600 cursor-pointer"
                       />
                     </td>
-                    <td className="px-2 py-2" colSpan={5}>
+                    <td className="px-2 py-2" colSpan={6}>
                       <div className="flex items-center gap-4 text-xs">
                         <div className="flex items-center gap-2">
                           <label className="text-xs text-gray-600">Extra guests:</label>
@@ -1140,6 +1207,16 @@ Chris & Candice`;
                               })
                             }
                             className="border border-gray-300 rounded px-2 py-1 text-xs w-16"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 col-span-2">
+                          <label className="text-xs text-gray-600 whitespace-nowrap">Guest names:</label>
+                          <input
+                            type="text"
+                            value={editPlusOneNamesText}
+                            onChange={(e) => setEditPlusOneNamesText(e.target.value)}
+                            placeholder="Jane Doe, Bob Smith"
+                            className="border border-gray-300 rounded px-2 py-1 text-xs flex-1"
                           />
                         </div>
                         <div className="flex items-center gap-2">
@@ -1164,6 +1241,39 @@ Chris & Candice`;
                             className="w-4 h-4"
                           />
                         </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600">Attending:</label>
+                          <select
+                            value={editData.attending !== undefined ? String(editData.attending) : (g.attending === 1 ? "1" : g.attending === 0 ? "0" : "")}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setEditData({
+                                ...editData,
+                                attending: v === "1" ? 1 : v === "0" ? 0 : (null as unknown as number),
+                                rsvp_status: v !== "" ? "responded" : "pending",
+                              });
+                            }}
+                            className="border border-gray-300 rounded px-1 py-0.5 text-xs"
+                          >
+                            <option value="">—</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600">Meal:</label>
+                          <select
+                            value={editData.meal_preference !== undefined ? (editData.meal_preference ?? "") : (g.meal_preference ?? "")}
+                            onChange={(e) => setEditData({ ...editData, meal_preference: e.target.value || null })}
+                            className="border border-gray-300 rounded px-1 py-0.5 text-xs"
+                          >
+                            <option value="">—</option>
+                            <option value="no_preference">No preference</option>
+                            <option value="vegetarian">Vegetarian</option>
+                            <option value="vegan">Vegan</option>
+                            <option value="pescatarian">Pescatarian</option>
+                          </select>
+                        </div>
                       </div>
                     </td>
                     <td className="px-2 py-2">
@@ -1177,6 +1287,7 @@ Chris & Candice`;
                         onClick={() => {
                           setEditingId(null);
                           setEditData({});
+                          setEditPlusOneNamesText("");
                         }}
                         className="text-gray-500 hover:underline text-xs"
                       >
@@ -1199,6 +1310,9 @@ Chris & Candice`;
                       <span className="ml-1.5 text-xs" title={g.is_grooms_guest === 1 ? "Groom's guest" : "Bride's guest"}>
                         {g.is_grooms_guest === 1 ? "🤵" : "👰"}
                       </span>
+                      {g.is_under_10 === 1 && (
+                        <span className="ml-1.5 text-xs" title="Child (under 10)">👶</span>
+                      )}
                     </td>
                     <td className="px-4 py-2">
                       {g.email ? (
@@ -1278,6 +1392,15 @@ Chris & Candice`;
                         "—"
                       )}
                     </td>
+                    <td className="px-2 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={g.is_under_10 === 1}
+                        onChange={() => toggleUnder10(g.id, g.is_under_10)}
+                        className="w-4 h-4 cursor-pointer"
+                        title="Child (under 10)"
+                      />
+                    </td>
                     <td className="px-2 py-2">
                       <div className="flex flex-wrap gap-1">
                         <button
@@ -1298,6 +1421,10 @@ Chris & Candice`;
                           onClick={() => {
                             setEditingId(g.id);
                             setEditData({});
+                            const raw = g.plus_one_names;
+                            let initText = "";
+                            if (raw) { try { initText = (JSON.parse(raw) as string[]).join(", "); } catch { initText = raw; } }
+                            setEditPlusOneNamesText(initText);
                           }}
                           className="text-blue-600 hover:underline text-xs"
                         >

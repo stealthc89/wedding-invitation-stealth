@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   const mealBreakdown = db
     .prepare(
-      "SELECT meal_preference, COUNT(*) as count FROM guests WHERE attending = 1 AND meal_preference IS NOT NULL GROUP BY meal_preference"
+      `SELECT meal_preference, COUNT(*) as count FROM guests WHERE attending = 1 AND meal_preference IS NOT NULL${sideClause} GROUP BY meal_preference ORDER BY count DESC`
     )
     .all() as { meal_preference: string; count: number }[];
 

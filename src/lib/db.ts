@@ -284,6 +284,10 @@ function initSchema(db: Database.Database) {
 
   <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
 
+  <p style="margin: 20px 0; padding: 15px; background: #f0f4fe; border-radius: 8px; font-size: 13px; color: #444; text-align: center;">
+    🗓️ You can view the latest itinerary and wedding details on our <a href="{{home_link}}" style="color: #2d2d2d; font-weight: bold;">wedding website</a>.
+  </p>
+
   <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please contact us directly.</p>
 </div>`
@@ -322,6 +326,10 @@ function initSchema(db: Database.Database) {
 
   <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
 
+  <p style="margin: 20px 0; padding: 15px; background: #f0f4fe; border-radius: 8px; font-size: 13px; color: #444; text-align: center;">
+    🗓️ You can view the latest itinerary and wedding details on our <a href="{{home_link}}" style="color: #2d2d2d; font-weight: bold;">wedding website</a>.
+  </p>
+
   <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please contact us directly.</p>
 </div>`
@@ -354,6 +362,10 @@ function initSchema(db: Database.Database) {
   </p>
 
   <p style="margin: 20px 0; padding: 15px; background: #fef9f0; border-radius: 8px; font-size: 13px; color: #666; font-style: italic; text-align: center;">Your presence is the greatest gift of all. However, should you wish to bless us with a gift, an Amazon voucher or cash would be gratefully received.</p>
+
+  <p style="margin: 20px 0; padding: 15px; background: #f0f4fe; border-radius: 8px; font-size: 13px; color: #444; text-align: center;">
+    🗓️ You can view the latest itinerary and wedding details on our <a href="{{home_link}}" style="color: #2d2d2d; font-weight: bold;">wedding website</a>.
+  </p>
 
   <p>See you on the big day!</p>
   <p style="color: #888; font-size: 14px;">If you need to make changes, please contact us directly.</p>

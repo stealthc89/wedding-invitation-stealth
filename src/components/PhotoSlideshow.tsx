@@ -96,7 +96,8 @@ export default function PhotoSlideshow({
         : "";
 
   return (
-    <div className="slideshow-container">
+    <>
+      <div className="slideshow-container">
       {/* Previous image - stays visible during crossfade */}
       {previous !== null && (
         <div className="slideshow-slide slideshow-exit" key={`prev-${previous}`}>
@@ -125,7 +126,8 @@ export default function PhotoSlideshow({
       )}
 
       {overlay !== "none" && <div className={`slideshow-overlay ${overlayClass}`} />}
-      <div className="slideshow-content">{children}</div>
     </div>
+    <div className="slideshow-content">{children}</div>
+  </>
   );
 }

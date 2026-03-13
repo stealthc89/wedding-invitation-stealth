@@ -128,6 +128,7 @@ export async function sendTemplateEmail(
     guest_name: guest.name,
     rsvp_link: `${baseUrl}/rsvp/${guest.token}`,
     upload_link: `${baseUrl}/upload`,
+    home_link: baseUrl,
     invite_code: guest.token,
     ...extraVars,
   };

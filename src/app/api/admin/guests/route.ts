@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
         name: g.name,
         email: g.email,
         phone: g.phone || "",
+        is_under_10: g.is_under_10 === 1 ? "TRUE" : "FALSE",
         plus_one_allowed: g.plus_one_allowed || 0,
         is_grooms_guest: g.is_grooms_guest === 1 ? "TRUE" : "FALSE",
         rsvp_status: g.rsvp_status,
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
       "SELECT id, email, phone, plus_one_allowed FROM guests WHERE LOWER(name) = LOWER(?)"
     );
     const insert = db.prepare(
-      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_grooms_guest) VALUES (?, ?, ?, ?, ?, ?)"
+      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_grooms_guest, plus_one_names) VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
     const update = db.prepare(
       `UPDATE guests SET
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
         phone = COALESCE(NULLIF(?, ''), phone),
         plus_one_allowed = CASE WHEN ? > plus_one_allowed THEN ? ELSE plus_one_allowed END,
         is_grooms_guest = ?,
+        plus_one_names = COALESCE(NULLIF(?, ''), plus_one_names),
         updated_at = datetime('now')
       WHERE id = ?`
     );
@@ -121,6 +123,10 @@ export async function POST(req: NextRequest) {
         const plusOneRaw = row.plus_one_allowed || row["Plus One Allowed"] || row["Plus One"] || row.plus_one || "0";
         const groomsRaw = (row.is_grooms_guest || row["Is Groom's Guest"] || row["is grooms guest"] || "").toString().trim().toLowerCase();
         const isGroomsGuest = ["true", "1", "yes"].includes(groomsRaw) ? 1 : 0;
+        const plusOneNamesRaw = (row.plus_one_names || row["Plus One Names"] || row["plus_one_names"] || "").toString().trim();
+        const plusOneNamesJson = plusOneNamesRaw
+          ? JSON.stringify(plusOneNamesRaw.split(",").map((n: string) => n.trim()).filter(Boolean))
+          : null;
         if (!name) continue;
 
         // Validate email: allow empty, but validate if provided
@@ -147,14 +153,14 @@ export async function POST(req: NextRequest) {
           const hasNewPhone = phone && (!existing.phone || existing.phone === "");
           const hasHigherPlusOne = plusOneCount > (existing.plus_one_allowed || 0);
 
-          if (hasNewEmail || hasNewPhone || hasHigherPlusOne) {
-            update.run(email, phone, plusOneCount, plusOneCount, isGroomsGuest, existing.id);
+          if (hasNewEmail || hasNewPhone || hasHigherPlusOne || plusOneNamesJson) {
+            update.run(email, phone, plusOneCount, plusOneCount, isGroomsGuest, plusOneNamesJson, existing.id);
             updated++;
           } else {
             skipped++;
           }
         } else {
-          insert.run(uuidv4(), name.trim(), email || null, phone || null, plusOneCount, isGroomsGuest);
+          insert.run(uuidv4(), name.trim(), email || null, phone || null, plusOneCount, isGroomsGuest, plusOneNamesJson);
           added++;
         }
       }
@@ -172,7 +178,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Single guest add
-  const { name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id, is_grooms_guest } = await req.json();
+  const { name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id, is_grooms_guest, attending, rsvp_status, meal_preference } = await req.json();
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
@@ -186,12 +192,25 @@ export async function POST(req: NextRequest) {
 
   const token = uuidv4();
 
+  const attendingVal = attending !== undefined && attending !== null ? (attending ? 1 : 0) : null;
+  const rsvpStatusVal = rsvp_status || (attendingVal !== null ? "responded" : "pending");
+
   try {
     db.prepare(
-      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id, is_grooms_guest) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    ).run(token, name, trimmedEmail, phone || null, plus_one_allowed || 0, is_under_10 ? 1 : 0, is_plus_one ? 1 : 0, linked_to_guest_id || null, is_grooms_guest ? 1 : 0);
+      "INSERT INTO guests (token, name, email, phone, plus_one_allowed, is_under_10, is_plus_one, linked_to_guest_id, is_grooms_guest, attending, rsvp_status, meal_preference) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(token, name, trimmedEmail, phone || null, plus_one_allowed || 0, is_under_10 ? 1 : 0, is_plus_one ? 1 : 0, linked_to_guest_id || null, is_grooms_guest ? 1 : 0, attendingVal, rsvpStatusVal, meal_preference || null);
 
     const guest = db.prepare("SELECT * FROM guests WHERE token = ?").get(token);
+
+    // If this is a plus-one, sync primary guest's plus_one_names
+    if (is_plus_one && linked_to_guest_id) {
+      const companions = db
+        .prepare("SELECT name FROM guests WHERE linked_to_guest_id = ? ORDER BY created_at ASC")
+        .all(linked_to_guest_id) as { name: string }[];
+      db.prepare("UPDATE guests SET plus_one_names = ?, updated_at = datetime('now') WHERE id = ?")
+        .run(JSON.stringify(companions.map((c) => c.name)), linked_to_guest_id);
+    }
+
     return NextResponse.json(guest, { status: 201 });
   } catch (error) {
     // Handle SQLite constraint violations
@@ -255,6 +274,41 @@ export async function PUT(req: NextRequest) {
       updated_at = datetime('now')
     WHERE id = ?`
   ).run(name, email, phone, validatedPlusOne, plus_one_names, plus_one_meal_preference, is_under_10 !== undefined ? (is_under_10 ? 1 : 0) : null, is_plus_one !== undefined ? (is_plus_one ? 1 : 0) : null, linked_to_guest_id !== undefined ? linked_to_guest_id : null, rsvp_status, attending !== undefined ? (attending ? 1 : 0) : null, plus_one_attending !== undefined ? plus_one_attending : null, meal_preference, dietary_notes, invite_sent !== undefined ? (invite_sent ? 1 : 0) : null, is_grooms_guest !== undefined ? (is_grooms_guest ? 1 : 0) : null, id);
+
+  // If name was updated on a companion (is_plus_one), sync primary guest's plus_one_names
+  if (name !== undefined) {
+    const updatedGuest = db.prepare("SELECT is_plus_one, linked_to_guest_id FROM guests WHERE id = ?").get(id) as { is_plus_one: number; linked_to_guest_id: number | null } | undefined;
+    if (updatedGuest?.is_plus_one && updatedGuest.linked_to_guest_id) {
+      const primaryId = updatedGuest.linked_to_guest_id;
+      const companions = db
+        .prepare("SELECT name FROM guests WHERE linked_to_guest_id = ? ORDER BY created_at ASC")
+        .all(primaryId) as { name: string }[];
+      const newNames = companions.map((c) => c.name);
+      db.prepare("UPDATE guests SET plus_one_names = ?, updated_at = datetime('now') WHERE id = ?")
+        .run(JSON.stringify(newNames), primaryId);
+    }
+  }
+
+  // If plus_one_names was updated on a primary guest, sync companion rows' names
+  if (plus_one_names !== undefined) {
+    const updatedGuest = db.prepare("SELECT is_plus_one FROM guests WHERE id = ?").get(id) as { is_plus_one: number } | undefined;
+    if (!updatedGuest?.is_plus_one) {
+      // This is a primary guest — sync companion names
+      const companions = db
+        .prepare("SELECT id FROM guests WHERE linked_to_guest_id = ? ORDER BY created_at ASC")
+        .all(id) as { id: number }[];
+
+      if (companions.length > 0) {
+        let names: string[] = [];
+        try { names = JSON.parse(plus_one_names) as string[]; } catch { /* keep empty */ }
+
+        const updateName = db.prepare("UPDATE guests SET name = ?, updated_at = datetime('now') WHERE id = ?");
+        companions.forEach((c, i) => {
+          if (names[i]) updateName.run(names[i].trim(), c.id);
+        });
+      }
+    }
+  }
 
   const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(id);
   return NextResponse.json(guest);

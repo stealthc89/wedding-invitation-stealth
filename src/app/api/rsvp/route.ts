@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Rate limit: 200 requests per 15 minutes per invitation token
-  const rateLimit = checkRateLimit(`token:${token}`, { maxRequests: 200, windowMs: 15 * 60 * 1000 });
+  const rateLimit = checkRateLimit(`token:get:${token}`, { maxRequests: 200, windowMs: 15 * 60 * 1000 });
 
   if (!rateLimit.success) {
     return NextResponse.json(
@@ -51,24 +51,33 @@ export async function GET(req: NextRequest) {
     )
     .all(guestRecord.id) as { text: string }[];
 
+  // Include under-10 flags for each companion (for display on confirmation view)
+  const companions = db
+    .prepare("SELECT is_under_10 FROM guests WHERE linked_to_guest_id = ? ORDER BY created_at ASC")
+    .all(guestRecord.id) as { is_under_10: number }[];
+  const plus_one_under_10_restored = companions.length > 0
+    ? JSON.stringify(companions.map((c) => c.is_under_10 === 1))
+    : null;
+
   return NextResponse.json({
     ...guestRecord,
     rsvp_deadline: deadlineSetting?.value || null,
     challenges: challenges.map((c) => c.text),
+    plus_one_under_10: plus_one_under_10_restored,
   });
 }
 
 // POST /api/rsvp — submit RSVP
 export async function POST(req: NextRequest) {
   try {
-    const { token, email, attending, plus_one_attending, plus_one_names, plus_one_meal_preference, plus_one_dietary_notes, meal_preference, dietary_notes } = await req.json();
+    const { token, email, attending, plus_one_attending, plus_one_names, plus_one_meal_preference, plus_one_dietary_notes, plus_one_under_10, meal_preference, dietary_notes } = await req.json();
 
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
     }
 
     // Rate limit: 10 submissions per hour per invitation token
-    const rateLimit = checkRateLimit(`token:${token}`, { maxRequests: 10, windowMs: 60 * 60 * 1000 });
+    const rateLimit = checkRateLimit(`token:post:${token}`, { maxRequests: 10, windowMs: 60 * 60 * 1000 });
 
     if (!rateLimit.success) {
       return NextResponse.json(
@@ -87,7 +96,7 @@ export async function POST(req: NextRequest) {
     if (typeof attending !== "boolean") {
       return NextResponse.json({ error: "Attendance response required" }, { status: 400 });
     }
-    if (!email || typeof email !== "string" || !email.includes("@")) {
+    if (attending && (!email || typeof email !== "string" || !email.includes("@"))) {
       return NextResponse.json({ error: "Valid email address required" }, { status: 400 });
     }
 
@@ -162,10 +171,12 @@ export async function POST(req: NextRequest) {
         const companionNames = JSON.parse(finalPlusOneNames) as string[];
         const companionMeals = finalPlusOneMealPreference ? JSON.parse(finalPlusOneMealPreference) as string[] : [];
         const companionDietary = finalPlusOneDietaryNotes ? JSON.parse(finalPlusOneDietaryNotes) as string[] : [];
+        const companionUnder10Raw = plus_one_under_10 ? JSON.parse(plus_one_under_10) as unknown[] : [];
+        const companionUnder10 = companionUnder10Raw.slice(0, finalPlusOneCount).map((v) => v === true);
 
         const insertCompanion = db.prepare(
-          `INSERT INTO guests (token, name, email, is_plus_one, linked_to_guest_id, rsvp_status, attending, meal_preference, dietary_notes, is_grooms_guest)
-           VALUES (?, ?, ?, 1, ?, 'responded', 1, ?, ?, ?)`
+          `INSERT INTO guests (token, name, email, is_plus_one, linked_to_guest_id, rsvp_status, attending, meal_preference, dietary_notes, is_grooms_guest, is_under_10)
+           VALUES (?, ?, ?, 1, ?, 'responded', 1, ?, ?, ?, ?)`
         );
 
         for (let i = 0; i < companionNames.length && i < finalPlusOneCount; i++) {
@@ -178,7 +189,8 @@ export async function POST(req: NextRequest) {
               guest.id,
               companionMeals[i] || "no_preference",
               companionDietary[i] || null,
-              guest.is_grooms_guest ?? 0
+              guest.is_grooms_guest ?? 0,
+              companionUnder10[i] ? 1 : 0
             );
           }
         }
