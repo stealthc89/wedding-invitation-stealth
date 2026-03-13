@@ -211,11 +211,26 @@ export default function RSVPPage() {
           </p>
           <div className="w-12 h-px bg-white/40 mx-auto my-4" />
           {(() => {
+            // If already responded, show actual confirmed attendees
+            if (submitted) {
+              if (!attending) {
+                return <p className="text-xl text-white/90 mb-6">{guest.name}</p>;
+              }
+              const confirmedExtras = plusOneNames.slice(0, plusOneCount).filter(Boolean);
+              if (confirmedExtras.length === 0) {
+                return <p className="text-xl text-white/90 mb-6">{guest.name}</p>;
+              }
+              const allNames = [guest.name, ...confirmedExtras];
+              const formatted = allNames.length === 2
+                ? allNames.join(" & ")
+                : allNames.slice(0, -1).join(", ") + " & " + allNames[allNames.length - 1];
+              return <p className="text-xl text-white/90 mb-6">{formatted}</p>;
+            }
+            // Not yet responded — show admin-set names or placeholder
             const extraNames = guest.plus_one_names
               ? (() => { try { return JSON.parse(guest.plus_one_names) as string[]; } catch { return []; } })().filter(Boolean)
               : [];
             if (extraNames.length === 0) {
-              // No names given yet — show placeholder if they're allowed guests
               if (guest.plus_one_allowed > 0) {
                 const guestWord = guest.plus_one_allowed === 1 ? "Guest" : "Guests";
                 return <p className="text-xl text-white/90 mb-6">{guest.name} & {guestWord}</p>;
@@ -274,6 +289,17 @@ export default function RSVPPage() {
               <p>
                 <strong>Attending:</strong> {attending ? "Yes" : "No"}
               </p>
+              {attending && (
+                <p>
+                  <strong>Meal preference:</strong>{" "}
+                  {MEAL_OPTIONS.find((m) => m.value === mealPreference)?.label}
+                </p>
+              )}
+              {attending && dietaryNotes && (
+                <p>
+                  <strong>Dietary notes:</strong> {dietaryNotes}
+                </p>
+              )}
               {attending && guest.plus_one_allowed > 0 && (
                 <div>
                   <p>
@@ -299,17 +325,6 @@ export default function RSVPPage() {
                     </ul>
                   )}
                 </div>
-              )}
-              {attending && (
-                <p>
-                  <strong>Meal preference:</strong>{" "}
-                  {MEAL_OPTIONS.find((m) => m.value === mealPreference)?.label}
-                </p>
-              )}
-              {attending && dietaryNotes && (
-                <p>
-                  <strong>Dietary notes:</strong> {dietaryNotes}
-                </p>
               )}
             </div>
             {attending && (
