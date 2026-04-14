@@ -123,7 +123,7 @@ Loughton Grand Marquee
 Langston Road, Loughton, IG10 3TG
 _Canapés & Drinks: 3:30 PM onwards_
 
-⏰ *Please respond by 31st March 2026*
+⏰ *Please respond by 30th April 2026*
 
 Please RSVP using your personal link:
 {url}
@@ -136,7 +136,7 @@ Chris & Candice`;
       "You're Invited! 💒\n\nDear {name},\n\nWe would be delighted to have you celebrate our special day with us!",
     ];
     const saved = data.invite_message_template;
-    setInviteTemplate(!saved || oldDefaults.some(old => saved.startsWith(old.split('\n')[0])) || !saved.includes('31st March') ? defaultTemplate : saved);
+    setInviteTemplate(!saved || oldDefaults.some(old => saved.startsWith(old.split('\n')[0])) || !saved.includes('April') ? defaultTemplate : saved);
   }
 
   async function saveInviteTemplate() {

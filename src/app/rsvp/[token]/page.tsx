@@ -40,10 +40,15 @@ export default function RSVPPage() {
   const [attending, setAttending] = useState<boolean | null>(null);
   const [plusOneCount, setPlusOneCount] = useState(0);
   const [plusOneNames, setPlusOneNames] = useState<string[]>([]);
-  const [prepopulatedNames, setPrepopulatedNames] = useState<Set<number>>(new Set());
   const [plusOneMealPreferences, setPlusOneMealPreferences] = useState<string[]>([]);
   const [plusOneDietaryNotes, setPlusOneDietaryNotes] = useState<string[]>([]);
   const [plusOneUnder10, setPlusOneUnder10] = useState<boolean[]>([]);
+  // Pre-filled guest selection state (when admin has named the guests)
+  const [prepopNames, setPrepopNames] = useState<string[]>([]);
+  const [prepopChecked, setPrepopChecked] = useState<boolean[]>([]);
+  const [prepopMealPrefs, setPrepopMealPrefs] = useState<string[]>([]);
+  const [prepopDietaryNotes, setPrepopDietaryNotes] = useState<string[]>([]);
+  const [prepopUnder10, setPrepopUnder10] = useState<boolean[]>([]);
   const [mealPreference, setMealPreference] = useState("no_preference");
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [email, setEmail] = useState("");
@@ -67,12 +72,16 @@ export default function RSVPPage() {
           try {
             const names = JSON.parse(data.plus_one_names) as string[];
             if (names.length > 0) {
+              setPrepopNames(names);
+              setPrepopChecked(Array(names.length).fill(true));
+              setPrepopMealPrefs(Array(names.length).fill("no_preference"));
+              setPrepopDietaryNotes(Array(names.length).fill(""));
+              setPrepopUnder10(Array(names.length).fill(false));
               setPlusOneCount(names.length);
               setPlusOneNames(names);
               setPlusOneMealPreferences(Array(names.length).fill("no_preference"));
               setPlusOneDietaryNotes(Array(names.length).fill(""));
               setPlusOneUnder10(Array(names.length).fill(false));
-              setPrepopulatedNames(new Set(names.map((_, i) => i)));
             }
           } catch {
             // ignore parse errors
@@ -139,6 +148,21 @@ export default function RSVPPage() {
     setSubmitting(true);
     setError("");
     try {
+      // When pre-filled names exist, derive submission arrays from checkbox selections
+      let finalNames = plusOneNames.slice(0, plusOneCount);
+      let finalMealPrefs = plusOneMealPreferences.slice(0, plusOneCount);
+      let finalDietaryNotes = plusOneDietaryNotes.slice(0, plusOneCount);
+      let finalUnder10 = plusOneUnder10.slice(0, plusOneCount);
+      let finalCount = plusOneCount;
+      if (prepopNames.length > 0) {
+        const checkedIndices = prepopChecked.map((c, i) => c ? i : -1).filter(i => i >= 0);
+        finalNames = checkedIndices.map(i => prepopNames[i]);
+        finalMealPrefs = checkedIndices.map(i => prepopMealPrefs[i]);
+        finalDietaryNotes = checkedIndices.map(i => prepopDietaryNotes[i]);
+        finalUnder10 = checkedIndices.map(i => prepopUnder10[i]);
+        finalCount = checkedIndices.length;
+      }
+
       const res = await fetch("/api/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,11 +170,11 @@ export default function RSVPPage() {
           token,
           email,
           attending,
-          plus_one_attending: plusOneCount,
-          plus_one_names: attending && plusOneCount > 0 ? JSON.stringify(plusOneNames.slice(0, plusOneCount)) : null,
-          plus_one_meal_preference: attending && plusOneCount > 0 ? JSON.stringify(plusOneMealPreferences.slice(0, plusOneCount)) : null,
-          plus_one_dietary_notes: attending && plusOneCount > 0 ? JSON.stringify(plusOneDietaryNotes.slice(0, plusOneCount)) : null,
-          plus_one_under_10: attending && plusOneCount > 0 ? JSON.stringify(plusOneUnder10.slice(0, plusOneCount)) : null,
+          plus_one_attending: finalCount,
+          plus_one_names: attending && finalCount > 0 ? JSON.stringify(finalNames) : null,
+          plus_one_meal_preference: attending && finalCount > 0 ? JSON.stringify(finalMealPrefs) : null,
+          plus_one_dietary_notes: attending && finalCount > 0 ? JSON.stringify(finalDietaryNotes) : null,
+          plus_one_under_10: attending && finalCount > 0 ? JSON.stringify(finalUnder10) : null,
           meal_preference: attending ? mealPreference : null,
           dietary_notes: attending ? dietaryNotes : null,
         }),
@@ -382,7 +406,13 @@ export default function RSVPPage() {
                   onClick={() => {
                     setAttending(true);
                     // Restore pre-populated names if count was reset by declining
-                    if (plusOneCount === 0 && guest.plus_one_names) {
+                    if (prepopNames.length > 0) {
+                      // Re-check all prepop guests when re-accepting
+                      const allChecked = Array(prepopNames.length).fill(true);
+                      setPrepopChecked(allChecked);
+                      setPlusOneCount(prepopNames.length);
+                      setPlusOneNames(prepopNames);
+                    } else if (plusOneCount === 0 && guest.plus_one_names) {
                       try {
                         const names = JSON.parse(guest.plus_one_names) as string[];
                         if (names.length > 0) {
@@ -391,7 +421,6 @@ export default function RSVPPage() {
                           setPlusOneMealPreferences(Array(names.length).fill("no_preference"));
                           setPlusOneDietaryNotes(Array(names.length).fill(""));
                           setPlusOneUnder10(Array(names.length).fill(false));
-                          setPrepopulatedNames(new Set(names.map((_, i) => i)));
                         }
                       } catch { /* ignore */ }
                     }
@@ -425,7 +454,7 @@ export default function RSVPPage() {
             {/* Guest Details — primary + additional in consistent card format */}
             {attending && (
               <div className="mb-6">
-                {guest.plus_one_allowed > 0 && (
+                {guest.plus_one_allowed > 0 && prepopNames.length === 0 && (
                   <>
                     <label className="block text-sm font-semibold text-white mb-1">
                       How many additional guests are you bringing?
@@ -516,87 +545,160 @@ export default function RSVPPage() {
                     </div>
                   </div>
 
-                  {/* Additional guest cards */}
-                  {Array.from({ length: plusOneCount }, (_, i) => (
-                    <div key={i} className="space-y-3 bg-white/5 rounded-lg p-3 border border-white/20">
-                      <p className="text-xs font-semibold text-white">Guest {i + 1}</p>
-                      <div>
-                        <label className="block text-xs text-white/70 mb-1">
-                          Full name <span className="text-red-400">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={plusOneNames[i] || ''}
-                          onChange={(e) => {
-                            const newNames = [...plusOneNames];
-                            newNames[i] = e.target.value;
-                            setPlusOneNames(newNames);
-                          }}
-                          required
-                          disabled={prepopulatedNames.has(i)}
-                          placeholder="Full name"
-                          className={`w-full px-3 py-2 rounded-lg border-2 text-sm transition-colors ${
-                            prepopulatedNames.has(i)
-                              ? "border-white/20 bg-white/5 text-white/70 cursor-not-allowed"
-                              : "border-white/30 focus:border-[var(--color-accent)] focus:outline-none bg-white/10 text-white placeholder:text-white/50"
-                          }`}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-white/70 mb-2">Meal preference</label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {MEAL_OPTIONS.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => {
-                                const newPrefs = [...plusOneMealPreferences];
-                                newPrefs[i] = option.value;
-                                setPlusOneMealPreferences(newPrefs);
+                  {/* Additional guest cards — checkbox selection when names pre-filled */}
+                  {prepopNames.length > 0 ? (
+                    <>
+                      <p className="text-sm font-medium text-white mb-2">
+                        Select which guests are attending:
+                      </p>
+                      {prepopNames.map((name, i) => (
+                        <div key={i} className={`space-y-3 rounded-lg p-3 border transition-all ${prepopChecked[i] ? 'bg-white/10 border-[var(--color-accent)]' : 'bg-white/5 border-white/20'}`}>
+                          <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={prepopChecked[i] || false}
+                              onChange={() => {
+                                const newChecked = [...prepopChecked];
+                                newChecked[i] = !newChecked[i];
+                                setPrepopChecked(newChecked);
                               }}
-                              className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
-                                (plusOneMealPreferences[i] || 'no_preference') === option.value
-                                  ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
-                                  : "border-white/40 hover:border-[var(--color-accent)] text-white"
-                              }`}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
+                              className="w-5 h-5 accent-[var(--color-accent)]"
+                            />
+                            <span className="text-sm font-semibold text-white">{name}</span>
+                          </label>
+                          {prepopChecked[i] && (
+                            <>
+                              <div>
+                                <label className="block text-xs text-white/70 mb-2">Meal preference</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {MEAL_OPTIONS.map((option) => (
+                                    <button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() => {
+                                        const newPrefs = [...prepopMealPrefs];
+                                        newPrefs[i] = option.value;
+                                        setPrepopMealPrefs(newPrefs);
+                                      }}
+                                      className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
+                                        (prepopMealPrefs[i] || 'no_preference') === option.value
+                                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                                          : "border-white/40 hover:border-[var(--color-accent)] text-white"
+                                      }`}
+                                    >
+                                      {option.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-white/70 mb-1">Dietary restrictions or special requests</label>
+                                <textarea
+                                  value={prepopDietaryNotes[i] || ''}
+                                  onChange={(e) => {
+                                    const newNotes = [...prepopDietaryNotes];
+                                    newNotes[i] = e.target.value;
+                                    setPrepopDietaryNotes(newNotes);
+                                  }}
+                                  maxLength={500}
+                                  rows={2}
+                                  placeholder="e.g., nut allergy, gluten-free, halal"
+                                  className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
+                                />
+                              </div>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={prepopUnder10[i] || false}
+                                  onChange={(e) => {
+                                    const updated = [...prepopUnder10];
+                                    updated[i] = e.target.checked;
+                                    setPrepopUnder10(updated);
+                                  }}
+                                  className="w-4 h-4 accent-[var(--color-accent)]"
+                                />
+                                <span className="text-xs text-white/70">Child (under 10)</span>
+                              </label>
+                            </>
+                          )}
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-white/70 mb-1">
-                          Dietary restrictions or special requests
+                      ))}
+                    </>
+                  ) : (
+                    Array.from({ length: plusOneCount }, (_, i) => (
+                      <div key={i} className="space-y-3 bg-white/5 rounded-lg p-3 border border-white/20">
+                        <p className="text-xs font-semibold text-white">Guest {i + 1}</p>
+                        <div>
+                          <label className="block text-xs text-white/70 mb-1">
+                            Full name <span className="text-red-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={plusOneNames[i] || ''}
+                            onChange={(e) => {
+                              const newNames = [...plusOneNames];
+                              newNames[i] = e.target.value;
+                              setPlusOneNames(newNames);
+                            }}
+                            required
+                            placeholder="Full name"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none bg-white/10 text-white placeholder:text-white/50 text-sm transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-white/70 mb-2">Meal preference</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {MEAL_OPTIONS.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  const newPrefs = [...plusOneMealPreferences];
+                                  newPrefs[i] = option.value;
+                                  setPlusOneMealPreferences(newPrefs);
+                                }}
+                                className={`py-2 px-2 rounded-lg border-2 text-xs transition-all ${
+                                  (plusOneMealPreferences[i] || 'no_preference') === option.value
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white shadow-md"
+                                    : "border-white/40 hover:border-[var(--color-accent)] text-white"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-white/70 mb-1">Dietary restrictions or special requests</label>
+                          <textarea
+                            value={plusOneDietaryNotes[i] || ''}
+                            onChange={(e) => {
+                              const newNotes = [...plusOneDietaryNotes];
+                              newNotes[i] = e.target.value;
+                              setPlusOneDietaryNotes(newNotes);
+                            }}
+                            maxLength={500}
+                            rows={2}
+                            placeholder="e.g., nut allergy, gluten-free, halal"
+                            className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={plusOneUnder10[i] || false}
+                            onChange={(e) => {
+                              const updated = [...plusOneUnder10];
+                              updated[i] = e.target.checked;
+                              setPlusOneUnder10(updated);
+                            }}
+                            className="w-4 h-4 accent-[var(--color-accent)]"
+                          />
+                          <span className="text-xs text-white/70">Child (under 10)</span>
                         </label>
-                        <textarea
-                          value={plusOneDietaryNotes[i] || ''}
-                          onChange={(e) => {
-                            const newNotes = [...plusOneDietaryNotes];
-                            newNotes[i] = e.target.value;
-                            setPlusOneDietaryNotes(newNotes);
-                          }}
-                          maxLength={500}
-                          rows={2}
-                          placeholder="e.g., nut allergy, gluten-free, halal"
-                          className="w-full px-3 py-2 rounded-lg border-2 border-white/30 focus:border-[var(--color-accent)] focus:outline-none text-sm transition-colors bg-white/10 text-white placeholder:text-white/50"
-                        />
                       </div>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={plusOneUnder10[i] || false}
-                          onChange={(e) => {
-                            const updated = [...plusOneUnder10];
-                            updated[i] = e.target.checked;
-                            setPlusOneUnder10(updated);
-                          }}
-                          className="w-4 h-4 accent-[var(--color-accent)]"
-                        />
-                        <span className="text-xs text-white/70">Child (under 10)</span>
-                      </label>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}

@@ -401,8 +401,8 @@ function initSchema(db: Database.Database) {
   }
 
   // Migration: add RSVP deadline notice to invitation and reminder templates
-  const deadlineMarker = 'Please respond by 31st March 2026';
-  const deadlineHtml = `\n  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 31st March 2026</strong></p>`;
+  const deadlineMarker = 'Please respond by 30th April 2026';
+  const deadlineHtml = `\n  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 30th April 2026</strong></p>`;
   for (const slug of ['invitation', 'reminder']) {
     const tmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = ?").get(slug) as { body_html: string } | undefined;
     if (tmpl && !tmpl.body_html.includes(deadlineMarker)) {
@@ -418,7 +418,7 @@ function initSchema(db: Database.Database) {
   // Migration: set RSVP deadline in settings if not already set
   const existingDeadline = db.prepare("SELECT value FROM settings WHERE key = 'rsvp_deadline'").get() as { value: string } | undefined;
   if (!existingDeadline) {
-    db.prepare("INSERT INTO settings (key, value) VALUES ('rsvp_deadline', '2026-03-31')").run();
+    db.prepare("INSERT INTO settings (key, value) VALUES ('rsvp_deadline', '2026-04-30')").run();
   }
 
   // Migration: update invitation email template with "Together with their families" header and wedding language
@@ -451,7 +451,7 @@ function initSchema(db: Database.Database) {
     <p style="margin: 4px 0;"><em>Canapés & Drinks: 3:30 PM onwards</em></p>
   </div>
 
-  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 31st March 2026</strong></p>
+  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 30th April 2026</strong></p>
 
   <p>Please RSVP by clicking the link below:</p>
   <p style="text-align: center; margin: 30px 0;">
@@ -480,7 +480,7 @@ function initSchema(db: Database.Database) {
     <p style="margin: 4px 0; text-align: center;">Arrive: 12:30 PM | Ceremony: 1:00 PM | Reception: 3:30 PM</p>
   </div>
 
-  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 31st March 2026</strong></p>
+  <p style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 8px; font-size: 14px; color: #856404; text-align: center;"><strong>⏰ Please respond by 30th April 2026</strong></p>
 
   <p style="text-align: center; margin: 30px 0;">
     <a href="{{rsvp_link}}" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block;">RSVP Now</a>
@@ -504,8 +504,33 @@ function initSchema(db: Database.Database) {
   // Migration: update saved invite_message_template in settings if it doesn't have the deadline
   const savedInviteMsg = db.prepare("SELECT value FROM settings WHERE key = 'invite_message_template'").get() as { value: string } | undefined;
   if (savedInviteMsg && !savedInviteMsg.value.includes('31st March')) {
-    const newInviteMsg = `Together with their families\n\nChris & Candice invite you to celebrate their wedding 💒\n\nDear {name},\n\nWe would be delighted to have you join us on our special day!\n\n✨ *Wedding Day Details* ✨\n\n📅 *Date:* Saturday, 23rd May 2026\n\n⛪ *Ceremony*\nWood Green New Testament Church of God\nArcadian Gardens, High Road, Wood Green\nLondon, N22 5AA\n_Arrive: 12:30 PM | Ceremony: 1:00 PM_\n\n🥂 *Reception*\nLoughton Grand Marquee\nLangston Road, Loughton, IG10 3TG\n_Canapés & Drinks: 3:30 PM onwards_\n\n⏰ *Please respond by 31st March 2026*\n\nPlease RSVP using your personal link:\n{url}\n\nWe can't wait to celebrate with you! 💕\n\nChris & Candice`;
+    const newInviteMsg = `Together with their families\n\nChris & Candice invite you to celebrate their wedding 💒\n\nDear {name},\n\nWe would be delighted to have you join us on our special day!\n\n✨ *Wedding Day Details* ✨\n\n📅 *Date:* Saturday, 23rd May 2026\n\n⛪ *Ceremony*\nWood Green New Testament Church of God\nArcadian Gardens, High Road, Wood Green\nLondon, N22 5AA\n_Arrive: 12:30 PM | Ceremony: 1:00 PM_\n\n🥂 *Reception*\nLoughton Grand Marquee\nLangston Road, Loughton, IG10 3TG\n_Canapés & Drinks: 3:30 PM onwards_\n\n⏰ *Please respond by 30th April 2026*\n\nPlease RSVP using your personal link:\n{url}\n\nWe can't wait to celebrate with you! 💕\n\nChris & Candice`;
     db.prepare("UPDATE settings SET value = ? WHERE key = 'invite_message_template'").run(newInviteMsg);
+  }
+
+  // Migration: update deadline from 31st March to 30th April 2026 in all stored data
+  const deadlineUpdateMigration = db.prepare("SELECT value FROM settings WHERE key = 'deadline_updated_april_2026'").get();
+  if (!deadlineUpdateMigration) {
+    // Update rsvp_deadline setting
+    db.prepare("UPDATE settings SET value = '2026-04-30' WHERE key = 'rsvp_deadline' AND value = '2026-03-31'").run();
+    // Update invite_message_template
+    const inviteMsg = db.prepare("SELECT value FROM settings WHERE key = 'invite_message_template'").get() as { value: string } | undefined;
+    if (inviteMsg?.value.includes('31st March')) {
+      db.prepare("UPDATE settings SET value = ? WHERE key = 'invite_message_template'").run(
+        inviteMsg.value.replace(/31st March 2026/g, '30th April 2026')
+      );
+    }
+    // Update email templates
+    for (const slug of ['invitation', 'reminder']) {
+      const tmpl = db.prepare("SELECT body_html FROM email_templates WHERE slug = ?").get(slug) as { body_html: string } | undefined;
+      if (tmpl?.body_html.includes('31st March')) {
+        db.prepare("UPDATE email_templates SET body_html = ? WHERE slug = ?").run(
+          tmpl.body_html.replace(/31st March 2026/g, '30th April 2026'),
+          slug
+        );
+      }
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('deadline_updated_april_2026', '1')").run();
   }
 
   // Migration: seed photo challenge reminder template if missing
