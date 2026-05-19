@@ -8,6 +8,8 @@ import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 const NAV_ITEMS = [
   { href: "/manage/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/manage/guests", label: "Guests", icon: "👥" },
+  { href: "/manage/seating", label: "Seating", icon: "🪑" },
+  { href: "/manage/menu", label: "Menu", icon: "🍽️" },
   { href: "/manage/challenges", label: "Challenges", icon: "🎯" },
   { href: "/manage/photos", label: "Photos", icon: "📷" },
   { href: "/manage/templates", label: "Templates", icon: "✉️" },

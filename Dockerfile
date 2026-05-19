@@ -21,8 +21,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install runtime dependency for better-sqlite3
-RUN apk add --no-cache python3 make g++
+# Install runtime dependencies
+RUN apk add --no-cache python3 make g++ imagemagick ghostscript
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

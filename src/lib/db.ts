@@ -533,6 +533,25 @@ function initSchema(db: Database.Database) {
     db.prepare("INSERT INTO settings (key, value) VALUES ('deadline_updated_april_2026', '1')").run();
   }
 
+  // Migration: create seating table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS seating (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guest_name TEXT NOT NULL,
+      table_number TEXT NOT NULL,
+      table_name TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_seating_name ON seating(guest_name);
+
+    CREATE TABLE IF NOT EXISTS seating_table_map (
+      table_number TEXT PRIMARY KEY,
+      table_name TEXT,
+      x_pct REAL NOT NULL,
+      y_pct REAL NOT NULL
+    );
+  `);
+
   // Migration: seed photo challenge reminder template if missing
   const hasPhotoChallengeReminder = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'photo_challenge_reminder'").get();
   if (!hasPhotoChallengeReminder) {
