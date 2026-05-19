@@ -241,9 +241,9 @@ function initSchema(db: Database.Database) {
 
     <p style="margin: 12px 0;"><strong>5:00 PM</strong> - Bride & Groom Arrival</p>
     <p style="margin: 12px 0;"><strong>6:00 PM</strong> - Dinner Served</p>
-    <p style="margin: 12px 0;"><strong>7:30 PM</strong> - Cake Cutting</p>
-    <p style="margin: 12px 0;"><strong>8:00 PM</strong> - Speeches</p>
-    <p style="margin: 12px 0;"><strong>9:00 PM</strong> - Dance Floor Opens! 🎉</p>
+    <p style="margin: 12px 0;"><strong>7:00 PM</strong> - Speeches</p>
+    <p style="margin: 12px 0;"><strong>7:45 PM</strong> - Cake Cutting</p>
+    <p style="margin: 12px 0;"><strong>9:45 PM</strong> - Dance Floor Opens! 🎉</p>
     <p style="margin: 12px 0;"><strong>1:00 AM</strong> - Evening Ends</p>
   </div>
 
@@ -653,9 +653,9 @@ function initSchema(db: Database.Database) {
 
     <p style="margin: 12px 0;"><strong>5:00 PM</strong> - Bride & Groom Arrival</p>
     <p style="margin: 12px 0;"><strong>6:00 PM</strong> - Dinner Served</p>
-    <p style="margin: 12px 0;"><strong>7:30 PM</strong> - Cake Cutting</p>
-    <p style="margin: 12px 0;"><strong>8:00 PM</strong> - Speeches</p>
-    <p style="margin: 12px 0;"><strong>9:00 PM</strong> - Dance Floor Opens! 🎉</p>
+    <p style="margin: 12px 0;"><strong>7:00 PM</strong> - Speeches</p>
+    <p style="margin: 12px 0;"><strong>7:45 PM</strong> - Cake Cutting</p>
+    <p style="margin: 12px 0;"><strong>9:45 PM</strong> - Dance Floor Opens! 🎉</p>
     <p style="margin: 12px 0;"><strong>1:00 AM</strong> - Evening Ends</p>
   </div>
 
@@ -669,6 +669,19 @@ function initSchema(db: Database.Database) {
   <p style="color: #888; font-size: 14px;">If you have any questions, please don't hesitate to contact us.</p>
 </div>`
     );
+  }
+
+  // Migration: update reception itinerary times in email template
+  const itineraryTimesUpdate = db.prepare("SELECT value FROM settings WHERE key = 'itinerary_times_updated_may2026'").get();
+  if (!itineraryTimesUpdate) {
+    const itineraryRow = db.prepare("SELECT id, body FROM email_templates WHERE name = 'itinerary'").get() as { id: number; body: string } | undefined;
+    if (itineraryRow) {
+      const oldBlock = `<strong>7:30 PM</strong> - Cake Cutting</p>\n    <p style="margin: 12px 0;"><strong>8:00 PM</strong> - Speeches</p>\n    <p style="margin: 12px 0;"><strong>9:00 PM</strong> - Dance Floor Opens! 🎉</p>`;
+      const newBlock = `<strong>7:00 PM</strong> - Speeches</p>\n    <p style="margin: 12px 0;"><strong>7:45 PM</strong> - Cake Cutting</p>\n    <p style="margin: 12px 0;"><strong>9:45 PM</strong> - Dance Floor Opens! 🎉</p>`;
+      const updated = itineraryRow.body.replace(oldBlock, newBlock);
+      db.prepare("UPDATE email_templates SET body = ? WHERE id = ?").run(updated, itineraryRow.id);
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('itinerary_times_updated_may2026', '1')").run();
   }
 
   // Migration: add category column to photo_challenges if missing

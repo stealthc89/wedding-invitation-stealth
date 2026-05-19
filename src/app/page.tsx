@@ -128,9 +128,9 @@ export default function Home() {
                       <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">3:30 PM</span><span className="text-white/90">Canapés & Drinks</span></p>
                       <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">5:00 PM</span><span className="text-white/90">Bride & Groom Arrival</span></p>
                       <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">6:00 PM</span><span className="text-white/90">Dinner Served</span></p>
-                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">7:30 PM</span><span className="text-white/90">Cake Cutting</span></p>
-                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">8:00 PM</span><span className="text-white/90">Speeches</span></p>
-                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">9:00 PM</span><span className="text-white/90">Dance Floor Opens</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">7:00 PM</span><span className="text-white/90">Speeches</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">7:45 PM</span><span className="text-white/90">Cake Cutting</span></p>
+                      <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">9:45 PM</span><span className="text-white/90">Dance Floor Opens</span></p>
                       <p className="flex items-baseline"><span className="font-semibold text-white/95 w-24 flex-shrink-0">1:00 AM</span><span className="text-white/90">Evening Ends</span></p>
                     </div>
                   </div>
