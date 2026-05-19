@@ -3,14 +3,15 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-const MENU_PATH = path.join(process.cwd(), "public", "media", "menu.jpg");
+const DATA_DIR = process.env.DB_DIR || path.join(process.cwd(), "data");
+const MENU_PATH = path.join(DATA_DIR, "menu.jpg");
 const MENU_PDF_TMP = "/tmp/menu-upload.pdf";
 
 export async function GET() {
   const exists = fs.existsSync(MENU_PATH);
   return NextResponse.json({
     hasMenu: exists,
-    url: exists ? `/media/menu.jpg?t=${Date.now()}` : null,
+    url: exists ? `/api/admin/menu/image?t=${Date.now()}` : null,
   });
 }
 
@@ -19,6 +20,8 @@ export async function POST(request: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+
   const buffer = Buffer.from(await file.arrayBuffer());
   const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
@@ -26,13 +29,12 @@ export async function POST(request: NextRequest) {
     fs.writeFileSync(MENU_PDF_TMP, buffer);
     try {
       execSync(
-        `convert -density 200 "${MENU_PDF_TMP}[0]" -quality 95 -background white -flatten "${MENU_PATH}"`,
+        `magick -density 200 "${MENU_PDF_TMP}[0]" -quality 95 -background white -flatten "${MENU_PATH}"`,
         { timeout: 30000 }
       );
     } catch {
-      // Fallback: try magick
       execSync(
-        `magick -density 200 "${MENU_PDF_TMP}[0]" -quality 95 -background white -flatten "${MENU_PATH}"`,
+        `convert -density 200 "${MENU_PDF_TMP}[0]" -quality 95 -background white -flatten "${MENU_PATH}"`,
         { timeout: 30000 }
       );
     }
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     fs.writeFileSync(MENU_PATH, buffer);
   }
 
-  return NextResponse.json({ ok: true, url: `/media/menu.jpg?t=${Date.now()}` });
+  return NextResponse.json({ ok: true, url: `/api/admin/menu/image?t=${Date.now()}` });
 }
 
 export async function DELETE() {
