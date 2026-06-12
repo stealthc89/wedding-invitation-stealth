@@ -238,7 +238,7 @@ export default function DashboardPage() {
           Email Actions
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          Send invitations, reminders, itinerary, or photo challenge reminders to guests. Emails are sent only to relevant guests.
+          Send invitations, reminders, itinerary, photo challenge reminders, or thank you notes to guests. Emails are sent only to relevant guests.
         </p>
         {sendResult && (
           <div className="text-sm text-green-700 bg-green-50 border border-green-200 p-3 rounded-lg mb-4 flex items-start gap-2">
@@ -282,6 +282,15 @@ export default function DashboardPage() {
             {sending === "photo_challenge_reminder"
               ? "Sending..."
               : "Remind Photo Challenges (attending only)"}
+          </button>
+          <button
+            onClick={() => sendEmails("thank_you")}
+            disabled={sending !== null}
+            className="px-4 py-2 bg-rose-600 text-white rounded text-sm hover:bg-rose-700 disabled:opacity-50"
+          >
+            {sending === "thank_you"
+              ? "Sending..."
+              : "Send Thank You (attending only)"}
           </button>
         </div>
       </div>

@@ -684,6 +684,56 @@ function initSchema(db: Database.Database) {
     db.prepare("INSERT INTO settings (key, value) VALUES ('itinerary_times_updated_may2026', '1')").run();
   }
 
+  // Migration: seed thank_you email template if missing
+  const hasThankYou = db.prepare("SELECT 1 FROM email_templates WHERE slug = 'thank_you'").get();
+  if (!hasThankYou) {
+    const insertTemplate = db.prepare(
+      "INSERT INTO email_templates (slug, name, subject, body_html) VALUES (?, ?, ?, ?)"
+    );
+    insertTemplate.run(
+      "thank_you",
+      "Thank You",
+      "Thank you for celebrating with us 💕",
+      `<div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #2d2d2d;">
+  <div style="text-align: center; padding: 32px 0 24px 0; border-bottom: 1px solid #e5e5e5;">
+    <p style="margin: 0 0 8px 0; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: #888;">Together with their families</p>
+    <h1 style="margin: 0; font-size: 36px; font-weight: normal; font-style: italic;">Chris &amp; Candice</h1>
+    <p style="margin: 8px 0 0 0; font-size: 14px; color: #888;">23 · 05 · 2026</p>
+  </div>
+
+  <div style="padding: 32px 0;">
+    <p style="margin: 0 0 20px 0; font-size: 16px;">Dear {{guest_name}},</p>
+
+    <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.7;">
+      We are absolutely overwhelmed with joy and gratitude as we reflect on our wedding day. Having you there with us made it all the more special, and we are so thankful you chose to share that moment with us.
+    </p>
+
+    <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.7;">
+      The love and warmth in that room was something we will carry with us for the rest of our lives. Thank you for travelling, for dressing up, for dancing, laughing, and celebrating with us — it meant the world.
+    </p>
+
+    <p style="margin: 0 0 28px 0; font-size: 15px; line-height: 1.7;">
+      If you captured any moments on the day, we would love to see them! You can share your photos with us here:
+    </p>
+
+    <p style="text-align: center; margin: 0 0 32px 0;">
+      <a href="{{home_link}}/upload" style="background: #2d2d2d; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 4px; display: inline-block; font-size: 14px;">Share Your Photos</a>
+    </p>
+
+    <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.7;">
+      With all our love and gratitude,
+    </p>
+
+    <p style="margin: 0; font-size: 18px; font-style: italic;">Chris &amp; Candice x</p>
+  </div>
+
+  <div style="border-top: 1px solid #e5e5e5; padding: 20px 0 0 0; text-align: center;">
+    <p style="margin: 0; font-size: 12px; color: #aaa;">23rd May 2026 · Wood Green &amp; Loughton</p>
+  </div>
+</div>`
+    );
+  }
+
   // Migration: add category column to photo_challenges if missing
   const challengeCols = db.prepare("PRAGMA table_info(photo_challenges)").all() as { name: string }[];
   if (!challengeCols.some((c) => c.name === "category")) {

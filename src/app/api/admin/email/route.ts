@@ -50,6 +50,12 @@ export async function POST(req: NextRequest) {
         `)
         .all() as { id: number }[];
       targets = guests.map((g) => g.id);
+    } else if (templateSlug === "thank_you") {
+      // Send to all attending guests with an email address
+      const guests = db
+        .prepare("SELECT id FROM guests WHERE attending = 1 AND email != ''")
+        .all() as { id: number }[];
+      targets = guests.map((g) => g.id);
     }
   }
 
