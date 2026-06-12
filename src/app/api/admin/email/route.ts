@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ sent, failed, total: targets.length });
 }
 
-// GET /api/admin/email — get email log
-export async function GET() {
+// GET /api/admin/email — get email log, optionally filtered by ?template=slug
+export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
   } catch {
@@ -84,15 +84,37 @@ export async function GET() {
   }
 
   const db = getDb();
-  const logs = db
-    .prepare(
-      `SELECT e.*, g.name as guest_name, g.email as guest_email
-       FROM email_log e
-       LEFT JOIN guests g ON g.id = e.guest_id
-       ORDER BY e.sent_at DESC
-       LIMIT 200`
-    )
-    .all();
+  const template = req.nextUrl.searchParams.get("template");
 
-  return NextResponse.json(logs);
+  const logs = template
+    ? db.prepare(
+        `SELECT e.*, g.name as guest_name, g.email as guest_email
+         FROM email_log e
+         LEFT JOIN guests g ON g.id = e.guest_id
+         WHERE e.template_slug = ?
+         ORDER BY e.sent_at DESC
+         LIMIT 500`
+      ).all(template)
+    : db.prepare(
+        `SELECT e.*, g.name as guest_name, g.email as guest_email
+         FROM email_log e
+         LEFT JOIN guests g ON g.id = e.guest_id
+         ORDER BY e.sent_at DESC
+         LIMIT 200`
+      ).all();
+
+  // For a specific template, also return IDs of guests whose latest send failed
+  let failedGuestIds: number[] = [];
+  if (template) {
+    const failed = db.prepare(
+      `SELECT DISTINCT guest_id FROM email_log
+       WHERE template_slug = ? AND status = 'failed'
+         AND guest_id NOT IN (
+           SELECT guest_id FROM email_log WHERE template_slug = ? AND status = 'sent'
+         )`
+    ).all(template, template) as { guest_id: number }[];
+    failedGuestIds = failed.map((r) => r.guest_id);
+  }
+
+  return NextResponse.json({ logs, failedGuestIds });
 }

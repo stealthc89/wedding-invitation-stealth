@@ -23,11 +23,22 @@ const MEAL_LABELS: Record<string, string> = {
   pescatarian: "Pescatarian",
 };
 
+interface EmailLogEntry {
+  id: number;
+  guest_name: string;
+  guest_email: string;
+  status: string;
+  sent_at: string;
+}
+
 export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [sending, setSending] = useState<string | null>(null);
   const [sendResult, setSendResult] = useState<string | null>(null);
   const [sideFilter, setSideFilter] = useState<"all" | "bride" | "groom">("all");
+  const [thankYouLog, setThankYouLog] = useState<EmailLogEntry[] | null>(null);
+  const [thankYouFailedIds, setThankYouFailedIds] = useState<number[]>([]);
+  const [logLoading, setLogLoading] = useState(false);
 
   useEffect(() => {
     const params = sideFilter !== "all" ? `?side=${sideFilter}` : "";
@@ -36,19 +47,29 @@ export default function DashboardPage() {
       .then(setAnalytics);
   }, [sideFilter]);
 
-  async function sendEmails(templateSlug: string) {
+  async function loadThankYouLog() {
+    setLogLoading(true);
+    const res = await fetch("/api/admin/email?template=thank_you");
+    const data = await res.json();
+    setThankYouLog(data.logs);
+    setThankYouFailedIds(data.failedGuestIds);
+    setLogLoading(false);
+  }
+
+  async function sendEmails(templateSlug: string, guestIds?: number[]) {
     setSending(templateSlug);
     setSendResult(null);
     try {
       const res = await fetch("/api/admin/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateSlug }),
+        body: JSON.stringify({ templateSlug, ...(guestIds ? { guestIds } : {}) }),
       });
       const data = await res.json();
       setSendResult(
         `Sent: ${data.sent}, Failed: ${data.failed}, Total: ${data.total}`
       );
+      if (templateSlug === "thank_you") loadThankYouLog();
     } catch {
       setSendResult("Failed to send emails");
     } finally {
@@ -293,6 +314,87 @@ export default function DashboardPage() {
               : "Send Thank You (attending only)"}
           </button>
         </div>
+      </div>
+
+      {/* Thank You Send Log */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Thank You Email Log</h2>
+            <p className="text-sm text-gray-500">Who received the thank you email and delivery status</p>
+          </div>
+          <div className="flex gap-2">
+            {thankYouFailedIds.length > 0 && (
+              <button
+                onClick={() => sendEmails("thank_you", thankYouFailedIds)}
+                disabled={sending !== null}
+                className="px-3 py-1.5 bg-rose-600 text-white rounded text-sm hover:bg-rose-700 disabled:opacity-50"
+              >
+                {sending === "thank_you" ? "Sending..." : `Resend Failed (${thankYouFailedIds.length})`}
+              </button>
+            )}
+            <button
+              onClick={loadThankYouLog}
+              disabled={logLoading}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200 disabled:opacity-50"
+            >
+              {logLoading ? "Loading..." : thankYouLog === null ? "View Log" : "Refresh"}
+            </button>
+          </div>
+        </div>
+
+        {thankYouLog === null && !logLoading && (
+          <p className="text-sm text-gray-400 text-center py-4">Click &quot;View Log&quot; to load send history</p>
+        )}
+        {logLoading && (
+          <p className="text-sm text-gray-400 text-center py-4">Loading...</p>
+        )}
+        {thankYouLog !== null && !logLoading && thankYouLog.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">No thank you emails sent yet</p>
+        )}
+        {thankYouLog !== null && thankYouLog.length > 0 && (
+          <div className="overflow-x-auto">
+            <div className="mb-3 flex gap-4 text-sm">
+              <span className="text-green-700 font-medium">
+                ✓ Sent: {thankYouLog.filter((e) => e.status === "sent").length}
+              </span>
+              <span className="text-red-600 font-medium">
+                ✗ Failed: {thankYouLog.filter((e) => e.status === "failed").length}
+              </span>
+              <span className="text-gray-500">
+                Total: {thankYouLog.length}
+              </span>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left">
+                  <th className="pb-2 pr-4 font-medium text-gray-600">Guest</th>
+                  <th className="pb-2 pr-4 font-medium text-gray-600">Email</th>
+                  <th className="pb-2 pr-4 font-medium text-gray-600">Status</th>
+                  <th className="pb-2 font-medium text-gray-600">Sent At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {thankYouLog.map((entry) => (
+                  <tr key={entry.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="py-2 pr-4 text-gray-800">{entry.guest_name || "—"}</td>
+                    <td className="py-2 pr-4 text-gray-500">{entry.guest_email || "—"}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                        entry.status === "sent"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-600"
+                      }`}>
+                        {entry.status === "sent" ? "✓ Sent" : "✗ Failed"}
+                      </span>
+                    </td>
+                    <td className="py-2 text-gray-400 text-xs">{entry.sent_at}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Export */}
